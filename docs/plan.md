@@ -209,6 +209,9 @@ LT-2 and AC-5 results. Tag `m1-done`.
   key-layer part (YIN alone took ~80 ms per render).
 - 1.13: the processor state is the full `model::Kick` JSON; parts load on the render thread through `SampleCache`
   (session rate in the key); missing parts are listed by `getMissingSamples()` and stay silent.
+- Session stop (2026-10-19): 1.12 (cache part), 1.14–1.17 are open; status, open PO decisions and the verified
+  build/ctest/pluginval results are in `docs/checks/M1.md`. 1.12 is not ticked: the real-time Repitch fallback and
+  Key Track are done and tested, the background transposition cache is not.
 
 ## M2 Library + randomizer
 
