@@ -242,9 +242,9 @@ LT-2 and AC-5 results. Tag `m1-done`.
   Repitch references, blind default-vs-cheaper pairs), LT-2 (−24…+24 st via the cache method) and AC-5 (cached vs
   fallback, blind) material, level-matched, fixed-seed blind order; a ctest runs it on the synthetic parts. Not
   ticked: needs the PO's parts and listening (steps in `docs/checks/M1.md`).
-- Session stop (2026-10-19): 1.12 (cache part), 1.14–1.17 are open; status, open PO decisions and the verified
-  build/ctest/pluginval results are in `docs/checks/M1.md`. 1.12 is not ticked: the real-time Repitch fallback and
-  Key Track are done and tested, the background transposition cache is not.
+- Final verified run (2026-10-19, dev machine, Release): build OK, `ctest` 102/102 passed, `tools/validate.ps1`
+  pluginval strictness 8 PASSED, VST3 validator 47 passed / 0 failed. Open for the PO: 1.15 and 1.17 manual checks
+  and the M1 exit (`docs/checks/M1.md`).
 
 ## M2 Library + randomizer
 
