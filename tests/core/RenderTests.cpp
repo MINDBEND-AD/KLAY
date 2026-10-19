@@ -371,3 +371,24 @@ TEST_CASE("Benchmark: re-render of 12 layers after an edit", "[core][render][bm]
     WARN("NFR-004: re-render after an edit, worst of 10: " << worstMs << " ms (target < 30 ms); cold render: " << coldMs << " ms");
     CHECK(worstMs < 30.0);
 }
+
+// FR-106 (PO decision 2026-10-19): in Repitch mode the Stretch knob is the varispeed and the Pitch knob is ignored.
+TEST_CASE("Repitch mode: Stretch knob sets the speed, Pitch is ignored", "[core][render][FR-106]")
+{
+    Fixture f;
+    f.samples["sine"] = makeSample(test::sine(1000.0, kSr, 4800));
+    auto kick = plainKick();
+    auto& layer = kick.layers[0];
+    layer.samplePath = "sine";
+    layer.mode = model::LayerMode::repitch;
+    layer.stretch = 2.0;
+    layer.pitchSemitones = 7; // ignored in Repitch mode
+    layer.pitchCents = 30;
+
+    const auto part = render::processPart(layer, f.samples["sine"]->audio, f.context, model::StretchPreset::standard);
+    REQUIRE(part.size() == 9600); // length × 2
+    CHECK(std::abs(test::cents(test::zeroCrossingHz(part.left.data(), 1000, 8600, kSr), 500.0)) < 2.0); // one octave down
+
+    layer.stretch = 1.0;
+    CHECK(render::processPart(layer, f.samples["sine"]->audio, f.context, model::StretchPreset::standard) == f.samples["sine"]->audio);
+}

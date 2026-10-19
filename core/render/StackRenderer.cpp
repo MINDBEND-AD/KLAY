@@ -90,14 +90,14 @@ StereoBuffer processPart(const model::Layer& layer, const StereoBuffer& sample, 
     for (int ch = 0; ch < 2; ++ch)
         std::copy_n(sample.channel(ch) + start, trimmed.size(), trimmed.channel(ch));
 
-    const double semitones = layer.pitchSemitones + layer.pitchCents / 100.0;
     if (layer.mode == model::LayerMode::stretch)
-        return stretch(trimmed, sr, layer.stretch, semitones, preset);
+        return stretch(trimmed, sr, layer.stretch, layer.pitchSemitones + layer.pitchCents / 100.0, preset);
 
-    auto lengthChanged = stretch(trimmed, sr, layer.stretch, 0.0, preset);
-    if (semitones == 0.0)
-        return lengthChanged;
-    return repitch(lengthChanged, semitones, context.resamplers);
+    // FR-106 Repitch (PO decision 2026-10-19): the Pitch knob is greyed out; the Stretch knob sets the playback
+    // speed, so a length factor s plays at speed 1/s, i.e. −12·log2(s) semitones.
+    if (layer.stretch == 1.0)
+        return trimmed;
+    return repitch(trimmed, -12.0 * std::log2(layer.stretch), context.resamplers);
 }
 
 namespace

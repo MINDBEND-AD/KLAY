@@ -91,8 +91,8 @@ struct RenderContext
 bool isAudible(const model::Kick& kick, size_t index) noexcept;
 
 // Start/end trim then Stretch (Signalsmith, pitch kept) or Repitch (varispeed) of one part, before the offset
-// (FR-102, FR-104–106). In Repitch mode the pitch knob is varispeed and a stretch ≠ 1 is applied first as a
-// pitch-preserving length change.
+// (FR-102, FR-104–106). In Repitch mode the Pitch knob is ignored (greyed out in the UI) and the Stretch knob is
+// the varispeed: length × s, pitch −12·log2(s) semitones.
 StereoBuffer processPart(const model::Layer& layer, const StereoBuffer& sample, const RenderContext& context,
                          model::StretchPreset preset);
 

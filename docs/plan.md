@@ -191,8 +191,8 @@ LT-2 and AC-5 results. Tag `m1-done`.
   measured values (±10 cents, ±4.5 dB) to catch regressions. If Key Track needs exact tuning, an option is pitch
   via Signalsmith time-stretch by the ratio plus a Repitch by the same ratio (exact pitch, different artefacts).
   Stretch uses a fixed random seed for NFR-009. Signalsmith Linear 0.6.4 (MIT) is pinned and listed as its own row.
-- 1.7: Repitch mode applies a stretch ≠ 1 first as a pitch-preserving length change (Signalsmith), then the pitch
-  knob as varispeed; the spec does not say what the Stretch knob does in Repitch mode (PO to confirm). Envelope time
+- 1.7: Repitch mode (spec FR-106 as updated 2026-10-19): the Pitch knob is ignored and the Stretch knob is the
+  varispeed (length × s, pitch −12·log2(s) st, JUCE Lagrange); UT added. Envelope time
   is the kick timeline (offset included). Layers are processed in parallel (std::async) and processed parts are
   cached by everything that affects them, so fader/offset/envelope/mute/solo/routing edits skip Signalsmith.
   Mute/solo click rules (`model::clickMute`, `clickSolo`) were needed for the 1.7 test and are in place for 2.4.
@@ -214,7 +214,7 @@ LT-2 and AC-5 results. Tag `m1-done`.
   (an ideal time-stretch keeps the mean square), so level is within ±1 dB at every factor and preset (UT tightened);
   (3) Repitch mode (FR-106): default mode is Stretch; in Repitch mode the Pitch knob is greyed out, so the Stretch
   knob is the varispeed control (length and pitch change together). Spec updated 2026-10-19 (FR-106, UI-007, decision log; Claude Docs and
-  docs/spec.md). The renderer still uses the Pitch knob as varispeed and must follow when M1 resumes; the wireframes
+  docs/spec.md). The renderer follows it (UT); the wireframes
   lack the mode switch (see M3); (4) factory samples go to the staging folder
   `C:\dev\KLAY-samples\` (outside the public repo), one sub-folder per layer role: Kick, Rumble, Drive, Crunch,
   Transient, Texture.
