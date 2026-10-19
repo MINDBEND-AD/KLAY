@@ -133,6 +133,13 @@ Layer makeDefaultLayer(int index);
 // FR-100: the default stack has kDefaultLayerCount empty layers.
 Kick makeDefaultKick();
 
+// FR-110: Shift+click on any Mute unmutes all layers when at least one is muted; a plain click toggles this layer.
+void clickMute(Kick& kick, size_t index, bool shift);
+
+// FR-111: Solo is exclusive, a new Solo replaces the previous ones; Shift+click adds (or removes) this layer's Solo.
+// A plain click on the only soloed layer clears it.
+void clickSolo(Kick& kick, size_t index, bool shift);
+
 // Clamps every value to its spec range (FR-100–106, FR-108, FR-124, FR-282) and sorts envelope points by time.
 void sanitise(Kick& kick);
 

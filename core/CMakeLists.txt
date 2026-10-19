@@ -11,13 +11,18 @@ add_library(klay_core STATIC
     dsp/Fft.h
     render/Envelope.cpp
     render/Envelope.h
+    render/RenderEngine.cpp
+    render/RenderEngine.h
     render/Resampler.cpp
     render/Resampler.h
+    render/StackRenderer.cpp
+    render/StackRenderer.h
     render/StereoBuffer.h
     render/Stretcher.cpp
     render/Stretcher.h
     render/TimeBase.cpp
     render/TimeBase.h
+    rt/HazardSlots.h
     rt/RtGuard.h
     rt/RtMutex.h)
 

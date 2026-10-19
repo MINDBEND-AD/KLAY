@@ -35,6 +35,33 @@ Kick makeDefaultKick()
     return kick;
 }
 
+void clickMute(Kick& kick, size_t index, bool shift)
+{
+    const bool anyMuted = std::any_of(kick.layers.begin(), kick.layers.end(), [](const Layer& l) { return l.mute; });
+    if (shift && anyMuted)
+    {
+        for (auto& layer : kick.layers)
+            layer.mute = false;
+        return;
+    }
+    kick.layers[index].mute = ! kick.layers[index].mute;
+}
+
+void clickSolo(Kick& kick, size_t index, bool shift)
+{
+    auto& layer = kick.layers[index];
+    if (shift)
+    {
+        layer.solo = ! layer.solo;
+        return;
+    }
+    const auto soloCount = std::count_if(kick.layers.begin(), kick.layers.end(), [](const Layer& l) { return l.solo; });
+    const bool onlyThis = layer.solo && soloCount == 1;
+    for (auto& l : kick.layers)
+        l.solo = false;
+    layer.solo = ! onlyThis;
+}
+
 namespace
 {
     template <typename T>

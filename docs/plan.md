@@ -158,8 +158,8 @@ Reaper and FL Studio. Tag `m0-done`.
 | 1.4 ✓ | Envelope model + evaluator: points, power-curve segments (Q10), grid snap 4/8/16, Alt for free placement, absolute time, sample-accurate application | FR-280–283 (model), FR-285 | UT: snapping (Gherkin example), values at points, no discontinuity, points keep absolute time when the length changes |
 | 1.5 ✓ | Repitch behind a `Resampler` interface; JUCE LagrangeInterpolator in the adapter | FR-106 | UT: 1 kHz sine at +12 st gives 2 kHz (FFT) at half the length |
 | 1.6 ✓ | Stretch wrapper (Signalsmith): length 0.25–8×, length-preserving pitch, default and cheaper presets switchable for LT-1 | FR-104, FR-105, FR-106 | UT: output length exact; pitch of a sine within ±2 cents; level within ±1 dB |
-| 1.7 | Stack renderer: start/end trim → stretch/repitch → offset → envelope → fader → mute/solo → buses (Main/A1/A2 × follow/fixed); kick length and end fade; autogain (Q7) | FR-102, FR-103, FR-107, FR-109, FR-110, FR-111, NFR-009 | UT: impulse offset is sample-accurate; start/end trim exact; mute/solo rules incl. "Mute beats Solo" and Shift-add; bus assignment; two renders bit-identical |
-| 1.8 | Background render thread + lock-free swap (generation counter, atomic pointer, old buffers freed off the audio thread) | FR-107, NFR-004, NFR-013 | UT stress test: edits while the audio thread reads; RT clean; BM: 12 layers, 1 beat at 150 BPM < 30 ms |
+| 1.7 ✓ | Stack renderer: start/end trim → stretch/repitch → offset → envelope → fader → mute/solo → buses (Main/A1/A2 × follow/fixed); kick length and end fade; autogain (Q7) | FR-102, FR-103, FR-107, FR-109, FR-110, FR-111, NFR-009 | UT: impulse offset is sample-accurate; start/end trim exact; mute/solo rules incl. "Mute beats Solo" and Shift-add; bus assignment; two renders bit-identical |
+| 1.8 ✓ | Background render thread + lock-free swap (generation counter, atomic pointer, old buffers freed off the audio thread) | FR-107, NFR-004, NFR-013 | UT stress test: edits while the audio thread reads; RT clean; BM: 12 layers, 1 beat at 150 BPM < 30 ms |
 | 1.9 | Voice + MIDI: monophonic; note-on cuts the old kick with a 5 ms fade; velocity ignored; 5 ms fade on transport stop; audition trigger API | FR-001, FR-115, FR-116 (API), FR-236 (stop fade) | UT: Gherkin "ringing kick fades within 5 ms, new one at full level"; velocity 1 and 127 give identical output; RT clean |
 | 1.10 | Host tempo: read playhead BPM, debounced re-render on change; manual override | FR-002 | UT with a simulated playhead |
 | 1.11 | Key detection: YIN 30–150 Hz, median over the settled tail; FFT peak cross-check; uncertain flag; note name + Hz | FR-120, FR-123 (data) | UT: synthetic kicks with known f0 (clean, tanh-distorted, pitch glide) detected to ±10 cents; disagreeing case flagged |
@@ -191,6 +191,14 @@ LT-2 and AC-5 results. Tag `m1-done`.
   measured values (±10 cents, ±4.5 dB) to catch regressions. If Key Track needs exact tuning, an option is pitch
   via Signalsmith time-stretch by the ratio plus a Repitch by the same ratio (exact pitch, different artefacts).
   Stretch uses a fixed random seed for NFR-009. Signalsmith Linear 0.6.4 (MIT) is pinned and listed as its own row.
+- 1.7: Repitch mode applies a stretch ≠ 1 first as a pitch-preserving length change (Signalsmith), then the pitch
+  knob as varispeed; the spec does not say what the Stretch knob does in Repitch mode (PO to confirm). Envelope time
+  is the kick timeline (offset included). Layers are processed in parallel (std::async) and processed parts are
+  cached by everything that affects them, so fader/offset/envelope/mute/solo/routing edits skip Signalsmith.
+  Mute/solo click rules (`model::clickMute`, `clickSolo`) were needed for the 1.7 test and are in place for 2.4.
+- 1.8: `core/render/RenderEngine` (std::thread worker, JUCE-free) hands renders to the audio thread through an
+  atomic pointer guarded by hazard-pointer slots (`core/rt/HazardSlots.h`); the worker frees replaced renders.
+  BM (dev machine, Release): re-render after a fader edit, 12 layers, 1 beat at 150 BPM: ~2 ms (target < 30 ms).
 
 ## M2 Library + randomizer
 

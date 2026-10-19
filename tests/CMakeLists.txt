@@ -18,6 +18,7 @@ endif()
 # run without JUCE.
 add_executable(klay_core_tests
     core/KickModelTests.cpp
+    core/RenderTests.cpp
     core/StretchTests.cpp
     core/TestSignals.h
     core/TimeEnvelopeTests.cpp

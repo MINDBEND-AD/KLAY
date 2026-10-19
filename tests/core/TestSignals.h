@@ -5,6 +5,7 @@
 // Synthetic test material (plan decision 5: automated tests use synthetic kicks) and measurement helpers. JUCE-free.
 
 #include "core/dsp/Fft.h"
+#include "core/render/Resampler.h"
 #include "core/render/StereoBuffer.h"
 
 #include <cmath>
@@ -59,5 +60,34 @@ inline double fftPeakHz(const float* x, size_t n, double sampleRate, double minH
         fftSize <<= 1;
     return dsp::peakFrequency(dsp::magnitudeSpectrum(x, n, fftSize), fftSize, sampleRate, minHz, maxHz);
 }
+
+} // namespace klay::test
+
+namespace klay::test
+{
+
+// JUCE-free linear-interpolation resampler for core tests that need a Resampler (the shipped one is JUCE Lagrange).
+class LinearResampler final : public render::Resampler
+{
+public:
+    void reset() noexcept override { pos = 0.0; }
+    int latencySamples() const noexcept override { return 0; }
+    int process(double ratio, const float* in, float* out, int numOut) noexcept override
+    {
+        double p = pos;
+        for (int i = 0; i < numOut; ++i, p += ratio)
+        {
+            const auto k = static_cast<size_t>(p);
+            const double frac = p - static_cast<double>(k);
+            out[i] = static_cast<float>(in[k] * (1.0 - frac) + in[k + 1] * frac);
+        }
+        const auto consumed = static_cast<int>(p);
+        pos = p - consumed;
+        return consumed;
+    }
+
+private:
+    double pos = 0.0;
+};
 
 } // namespace klay::test
