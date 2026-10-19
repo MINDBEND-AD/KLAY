@@ -106,11 +106,11 @@ TEST_CASE("Processor state round-trips the schema version", "[plugin][FR-003]")
     klay::KlayProcessor source;
     juce::MemoryBlock saved;
     source.getStateInformation(saved);
-    CHECK(saved.toString().contains("\"schemaVersion\":1"));
+    CHECK(saved.toString().contains("\"schemaVersion\": 1"));
 
     klay::KlayProcessor restored;
     restored.setStateInformation(saved.getData(), (int) saved.getSize());
-    CHECK(restored.getStateHeader() == source.getStateHeader());
+    CHECK(restored.getKick() == source.getKick());
 
     juce::MemoryBlock savedAgain;
     restored.getStateInformation(savedAgain);
@@ -125,7 +125,7 @@ TEST_CASE("Processor ignores corrupt state", "[plugin][FR-003]")
     const char garbage[] = "\x01\x02 not json";
     processor.setStateInformation(garbage, (int) sizeof(garbage));
     processor.setStateInformation(nullptr, 0);
-    CHECK(processor.getStateHeader() == klay::model::StateHeader{});
+    CHECK(processor.getKick() == klay::model::makeDefaultKick());
 }
 
 TEST_CASE("Editor opens and closes", "[plugin]")

@@ -2,7 +2,7 @@
 // LICENSE-GPL: KLAY own source, uses JUCE (AGPLv3). See THIRD_PARTY_LICENSES.md (C-006).
 #pragma once
 
-#include "core/model/StateHeader.h"
+#include "core/model/Kick.h"
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
@@ -44,10 +44,10 @@ public:
     void getStateInformation(juce::MemoryBlock& destData) override;
     void setStateInformation(const void* data, int sizeInBytes) override;
 
-    const model::StateHeader& getStateHeader() const noexcept { return stateHeader; }
+    const model::Kick& getKick() const noexcept { return kick; }
 
 private:
-    model::StateHeader stateHeader;
+    model::Kick kick = model::makeDefaultKick();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(KlayProcessor)
 };

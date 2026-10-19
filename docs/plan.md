@@ -152,7 +152,7 @@ Reaper and FL Studio. Tag `m0-done`.
 
 | # | Task | IDs | Verify |
 |---|---|---|---|
-| 1.1 | `core/model`: Stack (6 layers), Layer (sample ref, fader −∞…0 dB, offset, start and end trim, pitch ±12 st ±100 ct, stretch, mode, mute, solo, lock, role, routing, pitch-follow, name, envelope), Settings; versioned JSON | FR-100, FR-101, FR-102, FR-104–106, FR-114, FR-003, NFR-012 | UT: defaults match spec, round-trip, unknown fields ignored, missing fields defaulted |
+| 1.1 ✓ | `core/model`: Stack (6 layers), Layer (sample ref, fader −∞…0 dB, offset, start and end trim, pitch ±12 st ±100 ct, stretch, mode, mute, solo, lock, role, routing, pitch-follow, name, envelope), Settings; versioned JSON | FR-100, FR-101, FR-102, FR-104–106, FR-114, FR-003, NFR-012 | UT: defaults match spec, round-trip, unknown fields ignored, missing fields defaulted |
 | 1.2 | Sample loading (adapter): WAV/AIFF/FLAC to a float stereo buffer, mono to stereo, resample to session rate, on a background thread | FR-161, FR-162 (backend) | UT: each format loads; length after SR conversion; corrupt file gives an error, no crash |
 | 1.3 | Time base: note value → ms → samples from host or manual BPM (default 155, persisted); kick length; 5 ms end fade (Q8) | FR-108, FR-002 | UT: table of note values × BPMs; fade shape |
 | 1.4 | Envelope model + evaluator: points, power-curve segments (Q10), grid snap 4/8/16, Alt for free placement, absolute time, sample-accurate application | FR-280–283 (model), FR-285 | UT: snapping (Gherkin example), values at points, no discontinuity, points keep absolute time when the length changes |

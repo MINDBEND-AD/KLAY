@@ -20,6 +20,7 @@ Rows are machine-read: keep one component per row, globs in backticks, separated
 | KLAY own source | AGPL-3.0-only | — | `core/**`, `adapters/**`, `plugin/**`, `ui/**`, `tools/**`, `tests/**`, `cmake/**`, `.github/**`, `CMakeLists.txt` | Owner relicenses own code; JUCE-dependent layers (`plugin/`, `ui/`, `adapters/`) need a JUCE commercial licence (C-007) |
 | vst3sdk | MIT (VST3 SDK, since 3.8) | v3.8.0_build_66 | `build/vst3-validator/_deps/vst3sdk-src/**` (fetched by `tools/vst3-validator`; validator only, not linked into the plugin) | Not GPL; keep |
 | signalsmith-stretch | MIT | 1.4.0 | fetched from M1 on | Not GPL; keep (attribution notice required) |
+| nlohmann_json | MIT | v3.12.0 | `build/_deps/nlohmann_json-src/**` (fetched; JSON state and presets) | Not GPL; keep |
 | Catch2 | BSL-1.0 | v3.16.1 | `build/_deps/catch2-src/**` (fetched; tests only) | Not GPL; keep |
 | pluginval | GPL-3.0 | v1.0.4 | `tools/bin/pluginval/**` (downloaded binary, tooling only, never shipped or linked) | Tooling only; nothing to replace |
 

@@ -26,7 +26,13 @@ FetchContent_Declare(signalsmith-stretch
     GIT_TAG        1.4.0
     GIT_SHALLOW    TRUE)
 
-FetchContent_MakeAvailable(JUCE)
+# nlohmann/json (MIT): versioned JSON for state and presets (spec §10, FR-003, NFR-012). JUCE-free, used by core/.
+FetchContent_Declare(nlohmann_json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG        v3.12.0
+    GIT_SHALLOW    TRUE)
+
+FetchContent_MakeAvailable(JUCE nlohmann_json)
 
 if(KLAY_BUILD_TESTS)
     FetchContent_MakeAvailable(Catch2)

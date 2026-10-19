@@ -3,6 +3,7 @@
 #include "plugin/PluginProcessor.h"
 #include "plugin/PluginEditor.h"
 
+#include "core/model/KickJson.h"
 #include "core/rt/RtGuard.h"
 
 namespace klay
@@ -44,7 +45,7 @@ juce::AudioProcessorEditor* KlayProcessor::createEditor()
 
 void KlayProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
-    const auto json = model::toJson(stateHeader);
+    const auto json = model::toJson(kick);
     destData.replaceAll(json.data(), json.size());
 }
 
@@ -54,8 +55,8 @@ void KlayProcessor::setStateInformation(const void* data, int sizeInBytes)
         return;
 
     const std::string_view json(static_cast<const char*>(data), static_cast<size_t>(sizeInBytes));
-    if (auto header = model::stateHeaderFromJson(json))
-        stateHeader = *header;
+    if (auto parsed = model::kickFromJson(json))
+        kick = std::move(*parsed);
 }
 
 } // namespace klay
