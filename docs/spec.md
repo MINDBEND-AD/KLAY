@@ -4,7 +4,7 @@ Oct 19, 2026 · @Bernard
 
 ## 1. Document control & purpose
 
-This is version 0.9 (draft) of the requirements and specification for KLAY (working title), a layer-based kick drum plugin inspired by a commercial layer-based kick plugin. Its job is to give the coding session a single, testable source of truth.
+This is version 0.10 (draft) of the requirements and specification for KLAY (working title), a layer-based kick drum plugin inspired by a commercial layer-based kick plugin. Its job is to give the coding session a single, testable source of truth.
 
 - **Scope:** a VST3 instrument plugin for Windows that stacks sample layers into a kick, processes it through a modular FX rack, and exports the result. Version 1 is a pure sample player with no genre style targets.
 - **Out of scope (v1):** synthesis (planned for version 2), genre style targets, macOS / AU / AAX, standalone app, copy protection and licensing, distribution, stem export (version 2), sequencing.
@@ -109,9 +109,9 @@ Requirements are grouped by subsystem; each maps to a module in section 10.
 | FR-101 | Per layer: sample, volume fader (−∞ to 0 dB, default 0 dB; top-weighted travel, so the upper range of about −12 to 0 dB gets most of the fader travel), lock | Must |
 | FR-102 | Per layer: time offset (sample-accurate, Shift+drag on the waveform), start trim and end trim (handles at the left and right edges of the waveform in Layer view) | Must |
 | FR-103 | Per layer: drawable volume envelope (section 7.8); replaces separate fades | Must |
-| FR-104 | Per layer, Pitch mode (FR-106): pitch ±12 semitones and ±100 cents without changing length (Signalsmith Stretch) | Must |
+| FR-104 | Per layer, Pitch mode (FR-106): pitch ±12 semitones and ±100 cents without changing length (exact pitch: Signalsmith Stretch time-stretch by the pitch ratio, then a JUCE Lagrange repitch back to the original length) | Must |
 | FR-105 | **Per layer: length change without pitch change**, 0.25×–8×, in Length mode (FR-106), using Signalsmith Stretch — top priority of the pitch/length features | Must |
-| FR-106 | Per layer: one knob and a three-way mode switch, default Length. Length: changes length only, 0.25–8×, pitch unchanged (Signalsmith Stretch, FR-105). Pitch: changes pitch only, ±12 st and ±100 ct, length unchanged (Signalsmith Stretch, FR-104). Tape: tape-style varispeed (repitch), length and pitch change together, 0.25–8×, with the resulting pitch shown in the readout (JUCE LagrangeInterpolator). Only the active mode is applied, so a layer is either stretched, pitched or repitched. Each mode keeps its own value; switching modes applies that mode's stored value and is one undo step. Replaces the v0.4 behaviour (separate Pitch and Stretch knobs); scheduled for the second pass of M1 | Must |
+| FR-106 | Per layer: one knob and a three-way mode switch, default Length. Length: changes length only, 0.25–8×, pitch unchanged (Signalsmith Stretch, FR-105). Pitch: changes pitch only, ±12 st and ±100 ct, length unchanged (time-stretch plus repitch, FR-104). Tape: tape-style varispeed (repitch), length and pitch change together; the knob sets the playback speed, 0.25–8× (2× = twice as fast: half the length, one octave up), with the resulting pitch shown in the readout (JUCE LagrangeInterpolator). Only the active mode is applied, so a layer is either stretched, pitched or repitched. Each mode keeps its own value; switching modes applies that mode's stored value and is one undo step. Replaces the v0.4 behaviour (separate Pitch and Stretch knobs); scheduled for the second pass of M1 | Must |
 | FR-107 | Stack is rendered offline whenever a layer edit occurs, into three cached buses (Main-routed, Aux 1, Aux 2), each split into pitch-following and fixed layers for real-time Key Track (FR-125); playback reads the cache | Must |
 | FR-108 | Kick length set in Settings as a note value: 1/16, 1/8, 1/4 (default), 1/2, 1 bar; converted to ms from host BPM; defines visualiser, render and export length, with a 5 ms soft fade at the end. Envelope points keep their absolute time when the length changes | Must |
 | FR-109 | Autogain (on/off in Settings, default On): one gain, computed from the summed pre-FX buses (Main, Aux 1, Aux 2) and applied equally to all of them, normalises the rendered stack to a target peak (default −0.3 dBFS) before the FX chains | Should |
@@ -469,16 +469,16 @@ Two main pages, Kick (default) and FX, switched from the top bar. The library is
 | UI-014 | Colour themes (min. 2: dark default + one alternative) | Could |
 | UI-015 | Keyboard: Ctrl+Z, Ctrl+Shift+Z, space to audition | Should |
 | UI-016 | Tooltips on every control; double-click resets to default; Ctrl-drag for fine adjust on knobs and faders (Ctrl+drag on an FX module's header copies the module instead, FR-211) | Should |
-| UI-017 | Settings menu: kick length, envelope grid (4×4 / 8×8 / 16×16), roll template, key layer, host-tempo sync or manual BPM (default 155), on open: last session or empty kick, oversampling Live / Export (warning when Live is Off: distortion may alias, and the TP switch can no longer catch peaks between samples during playback), Mono filter slope (6 / 12 / 24 / 48 dB/oct, default 12), autogain on/off (FR-109, default On), library preview on click (On/Off, default On; UI-024), colour theme, window size | Must |
+| UI-017 | Settings menu: kick length, envelope grid (4×4 / 8×8 / 16×16), roll template, key layer, host-tempo sync or manual BPM (default 155), on open: last session or empty kick, oversampling Live / Export (warning when Live is Off: distortion may alias, and the TP switch can no longer catch peaks between samples during playback), Mono filter slope (6 / 12 / 24 / 48 dB/oct, default 12), autogain on/off (FR-109, default On), library preview on click (On/Off, default On; UI-024), colour theme, window size. Each setting ships with the priority of its own requirement (e.g. FR-244 Could, UI-024 Should) | Must |
 | UI-018 | Mono dial above the visualiser, left of Export all, labelled "Mono" only. A value arc around the dial shows the setting (empty arc = Off); the Hz value pops up on hover and while dragging (UI-019). Range 0 (Off) to 500 Hz, default 120 Hz, logarithmic travel | Must |
 | UI-019 | All dials share one behaviour: a value arc around the dial (empty at minimum or Off); the value pops up on hover and while dragging; a soft catch at the default value while dragging; double-click resets to default; right-click opens a field to type an exact value; Ctrl+drag and the mouse wheel give fine steps. Travel is linear for every dial except Mono (UI-018) and the layer knob in Length and Tape mode, which are logarithmic; the layer volume fader uses a top-weighted taper (FR-101) | Must |
 | UI-020 | Default theme “Forge”: gunmetal neutrals (body #111214, panel #1c1e21, edge #3a3d42, text #e9e5de, dim text #959089) with chamfered panel corners. Ember #ff5a1f is the only colour for on and selected, and the only colour that glows (soft bloom on the visualiser trace, values, meters and active controls). Bronze #c58b4b marks section headings, the Main route, trim handles and fader caps, never an on state. Amber #e0b04a means muted or a warning; red #ff3b30 means clipping only. Layer names are white. Fonts: Saira Condensed for labels, JetBrains Mono for values (both SIL Open Font License) | Must |
 | UI-021 | Meters (MASTER and module peak meters) use a temper scale: dull red at low level, through ember, to white at 0 dBFS; the clip LED turns red and holds for 1 s | Should |
-| UI-022 | Layer card states: selected = ember edge with glow; muted = amber M and a dimmed waveform; soloed = ember S, other layers dimmed; locked = LOCKED badge and the bin disabled; empty = dashed outline, “Drop a sample here” and a Roll button; drop target = ember dashed outline with the file name; missing sample = amber edge plus a message with Relink… | Must |
+| UI-022 | Layer card states: selected = ember edge with glow; muted = amber M and a dimmed waveform; soloed = ember S, other layers dimmed; locked = LOCKED badge and the bin disabled; empty = dashed outline, “Drop a sample here” and a Reforge button (↻); drop target = ember dashed outline with the file name; missing sample = amber edge plus a message with Relink… | Must |
 | UI-023 | Value pop-ups (UI-019) draw above every panel and are never clipped by a panel edge; near the top of the window they appear below the control | Must |
 | UI-024 | Library preview: a single click on a sample plays it. Settings → Library preview On/Off, default On; with Off, nothing plays until the sample is on a layer and the kick is triggered | Should |
 | UI-025 | Collapsing the library leaves a 40 px rail: expand button, search, one button per role. A role button expands the library opened at that role, and the role row is briefly highlighted. The visualiser and layer cards take the freed width; the window size does not change | Must |
-| UI-026 | Window size M is 1180 × 760 px; it is the 100 % size, and 75–200 % scale from it (UI-013); at 75 % the library starts collapsed | Should |
+| UI-026 | The 100 % window size is 1180 × 760 px; 75–200 % scale from it (UI-013); at 75 % the library starts collapsed | Should |
 | UI-027 | Key display states (FR-120, FR-123): detected = note and Hz in ember; uncertain = amber with “?” after the note; none = “—” | Should |
 | UI-028 | Layer fader scale (FR-101): ticks at 0, −3, −6, −12, −24 dB and −∞; half the travel covers 0 to about −13 dB | Should |
 | UI-029 | The preset field shows FACTORY or USER before the preset name; the visualiser footer shows the selected layer's offset, trim range and envelope point count | Could |
@@ -550,8 +550,8 @@ All layer edits and rolls change the stack model on the message thread; a backgr
 **Technology choices**
 
 - Framework: JUCE 8 — confirmed.
-- Repitch: JUCE `LagrangeInterpolator` — confirmed (JUCE's WindowedSincInterpolator as in-framework upgrade if aliasing is audible). Length change and length-preserving pitch: Signalsmith Stretch (MIT, header-only) — confirmed.
-- Real-time pitch for Key Track (confirmed, option B): a transposition cache of the pitch-following buses. After each edit, ±12 semitones around the root are rendered in the background with Signalsmith Stretch, nearest first; all other notes of the 0–127 range are rendered when first played and kept in a least-recently-used cache capped by NFR-014. A note that is not ready yet plays via real-time Repitch of the cached bus.
+- Repitch: JUCE `LagrangeInterpolator` — confirmed (JUCE's WindowedSincInterpolator as in-framework upgrade if aliasing is audible). Length change: Signalsmith Stretch (MIT, header-only) — confirmed. Length-preserving pitch: Signalsmith time-stretch plus Lagrange repitch (FR-104).
+- Real-time pitch for Key Track (confirmed, option B): a transposition cache of the pitch-following buses. After each edit, ±12 semitones around the root are rendered in the background with the exact-pitch method of FR-104 (Signalsmith time-stretch plus Lagrange repitch; Signalsmith's own pitch shift beyond about ±24 semitones), nearest first; all other notes of the 0–127 range are rendered when first played and kept in a least-recently-used cache capped by NFR-014. A note that is not ready yet plays via real-time Repitch of the cached bus.
 - Oversampling: `juce::dsp::Oversampling` in distorting modules only, factor from the global Live / Export setting (FR-212); EQ and filters use matched biquads instead (FR-215).
 - File formats: WAV/AIFF/FLAC via JUCE `AudioFormatManager`; MP3/OGG optional.
 - Data formats: presets, FX chains and the roll template as versioned JSON with a `schemaVersion` field.
@@ -602,7 +602,7 @@ Every Must requirement needs at least one automated test or a scripted manual ch
 2. **AC-2 Cache build time:** time to render root ±2, ±12 and the full 0–127 range on the reference machine; confirm NFR-015.
 3. **AC-3 Playback CPU:** CPU while playing cached notes and Repitch-fallback notes; confirm NFR-002.
 4. **AC-4 Latency:** note-on to first output sample adds zero samples for cached and fallback notes (FR-125, NFR-003).
-5. **AC-5 Fallback audibility:** blind A/B of a first (Repitch) hit against the cached (Signalsmith) hit at ±1, ±5 and ±12 semitones.
+5. **AC-5 Fallback audibility:** blind A/B of a first (Repitch) hit against the cached (exact-pitch) hit at ±1, ±5 and ±12 semitones.
 6. **LT-2 Transposition quality:** listening test of pitch-following layers at −24, −12, −5, +5, +12 and +24 semitones; note where results stop being musically usable.
 
 ## 13. MVP scope & roadmap
@@ -630,7 +630,7 @@ These need answers before or during the first coding session.
 - [x] **MVP module specs** (Distortion, Equalizer, Filters, Finalizer) — done 2026-10-18 in 7.5.2–7.5.5 (factory preset names still to come); common rules are in 7.5.1.
 - [ ] **Export dither (FR-262):** dither yes or no? Review before the MVP release (M5). Until then the default stays: deterministic TPDF dither on 24-bit, none on 32-bit float.
 - [ ] **Layer-card knobs (UI-007):** the layer knob design is provisional; revisit it when UI development starts (M3).
-- [ ] **Layer knob modes (FR-106):** confirm that each mode keeps its own value when switching (proposal), rather than the knob resetting to neutral.
+- [x] **Layer knob modes (FR-106):** each mode keeps its own value when switching (decided 2026-10-19).
 
 **Decision log**
 
@@ -686,6 +686,7 @@ These need answers before or during the first coding session.
 | 2026-10-19 | Section 3 (reference product analysis) moved to a private document; the spec keeps a one-line pointer and the section number. Document version 0.8 | Product owner decision; the spec is published with the AGPL source, the competitor analysis should not be |
 | 2026-10-19 | The reference product is no longer named in the spec (sections 1, 11, decision log, sources); the repository history was rewritten once so no earlier version names it either. Document version 0.9 | Product owner decision; one-time, approved exception to the never-rewrite-history rule |
 | 2026-10-19 | LT-1 passed; the default Signalsmith Stretch preset stays the stretch setting (cheaper preset not used). LT-2 and AC-5 passed, including exact-pitch shifting (time-stretch by the pitch ratio plus a Repitch back to length) and the first-hit Repitch fallback. M1 manual checks (dev editor, plays in key in a DAW) passed | Product owner listening tests and checks at the end of M1 (docs/checks/M1.md in the code repo) |
+| 2026-10-19 | Spec review before the M1 second pass: the Tape knob value is a playback speed (2× = half the length, one octave up); Pitch mode and the Key Track cache shift pitch by a Signalsmith time-stretch plus a Lagrange repitch (exact pitch); each layer mode keeps its own value (open question closed); UI-017 settings keep their own requirement's priority; the empty-card button is Reforge; the 100 % window size is 1180 × 760 px. Document version 0.10 | Product owner decisions on contradictions C1–C6 found in the v0.9 review (docs/plan.md in the code repo) |
 
 ### Sources
 

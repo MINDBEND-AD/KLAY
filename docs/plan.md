@@ -253,7 +253,8 @@ M1 was built and accepted on spec v0.4 (two knobs, Pitch + Stretch, plus a Stret
 replace that with one layer knob and a three-way mode switch (FR-104–106, UI-007, UI-019; decision log rows v0.6 and
 v0.7). Only the active mode is applied, each mode keeps its own value, default mode Length. This pass brings the M1
 code to v0.9 before M2 starts. Reviewed by the PO on 2026-10-19: the proposals for Q-A to Q-D below are accepted.
-Before 1.18 starts, the spec contradictions C1–C6 (below) need a PO answer; C1 affects 1.18, 1.20 and 1.22.
+The spec contradictions C1–C6 (below) were resolved by the PO the same day: proposals accepted, spec v0.10
+(Claude Docs and docs/spec.md) and the Kick page mock updated.
 
 | # | Task | IDs | Verify |
 |---|---|---|---|
@@ -278,7 +279,7 @@ Before 1.18 starts, the spec contradictions C1–C6 (below) need a PO answer; C1
 - **Q-D Key Track and Tape:** Tape changes the pitch of a pitch-following layer before Key Track; key detection on the
   key layer uses its processed (active-mode) sample, as now. Decision: this order.
 
-**Spec v0.9 contradictions found in the review (2026-10-19), open for the PO**
+**Spec v0.9 contradictions found in the review (2026-10-19); resolved as proposed, spec v0.10**
 
 Only real conflicts are listed; text that v0.9 replaced or added is taken as is.
 
