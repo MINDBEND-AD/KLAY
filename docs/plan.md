@@ -91,7 +91,7 @@ interfaces implemented in `adapters/`) · `plugin/` · `ui/` · `tools/render-cl
 | 0.1 ✓ | Repo files: .gitignore, .gitattributes, README, LICENSE (AGPL-3.0), THIRD_PARTY_LICENSES.md (JUCE, VST3 SDK, Signalsmith, Catch2), folder layout | C-006, C-007 | Review |
 | 0.2 ✓ | CMake + CMakePresets (VS 2026 x64, Debug/Release); FetchContent pins; targets `klay_core` (static, no JUCE), `KLAY` (juce_add_plugin, VST3 only, synth, MIDI in, stereo out; identity per decision 4), `klay_tests` | C-001, C-002 | Clean configure + build produces `Klaymore.vst3`; host shows "Klaymore" by "MINDBEND AD" |
 | 0.3 ✓ | Empty AudioProcessor: silence out, accepts 44.1–192 kHz and 16–4096 blocks; empty editor showing name + version; state stub with `schemaVersion` | C-001, FR-005, FR-003 (stub) | UT: process at every SR × block-size combination, no crash, silent output; state round-trip |
-| 0.4 | Test harness: Catch2 under ctest; JUCE-free core test plus a processor smoke test | §12 | `ctest` passes |
+| 0.4 ✓ | Test harness: Catch2 under ctest; JUCE-free core test plus a processor smoke test | §12 | `ctest` passes |
 | 0.5 | RT harness (Q1): allocation/lock hooks, audio-thread flag, `RT_GUARD` macro | NFR-001, FR-234 | UT: a deliberate allocation inside a guard is caught; the empty `processBlock` passes |
 | 0.6 | License check `tools/check-licenses.ps1`: GPL-family SPDX without the `LICENSE-GPL` marker, or missing from THIRD_PARTY_LICENSES.md, fails; runs as a ctest | C-006 | UT: an unmarked fixture file fails, the real tree passes |
 | 0.7 | `tools/validate.ps1`: pluginval (pinned) strictness 8 + VST3 validator on the built plugin | NFR-011 | PV passes, output shown |
