@@ -160,11 +160,11 @@ Reaper and FL Studio. Tag `m0-done`.
 | 1.6 ✓ | Stretch wrapper (Signalsmith): length 0.25–8×, length-preserving pitch, default and cheaper presets switchable for LT-1 | FR-104, FR-105, FR-106 | UT: output length exact; pitch of a sine within ±2 cents; level within ±1 dB |
 | 1.7 ✓ | Stack renderer: start/end trim → stretch/repitch → offset → envelope → fader → mute/solo → buses (Main/A1/A2 × follow/fixed); kick length and end fade; autogain (Q7) | FR-102, FR-103, FR-107, FR-109, FR-110, FR-111, NFR-009 | UT: impulse offset is sample-accurate; start/end trim exact; mute/solo rules incl. "Mute beats Solo" and Shift-add; bus assignment; two renders bit-identical |
 | 1.8 ✓ | Background render thread + lock-free swap (generation counter, atomic pointer, old buffers freed off the audio thread) | FR-107, NFR-004, NFR-013 | UT stress test: edits while the audio thread reads; RT clean; BM: 12 layers, 1 beat at 150 BPM < 30 ms |
-| 1.9 | Voice + MIDI: monophonic; note-on cuts the old kick with a 5 ms fade; velocity ignored; 5 ms fade on transport stop; audition trigger API | FR-001, FR-115, FR-116 (API), FR-236 (stop fade) | UT: Gherkin "ringing kick fades within 5 ms, new one at full level"; velocity 1 and 127 give identical output; RT clean |
-| 1.10 | Host tempo: read playhead BPM, debounced re-render on change; manual override | FR-002 | UT with a simulated playhead |
+| 1.9 ✓ | Voice + MIDI: monophonic; note-on cuts the old kick with a 5 ms fade; velocity ignored; 5 ms fade on transport stop; audition trigger API | FR-001, FR-115, FR-116 (API), FR-236 (stop fade) | UT: Gherkin "ringing kick fades within 5 ms, new one at full level"; velocity 1 and 127 give identical output; RT clean |
+| 1.10 ✓ | Host tempo: read playhead BPM, debounced re-render on change; manual override | FR-002 | UT with a simulated playhead |
 | 1.11 ✓ | Key detection: YIN 30–150 Hz, median over the settled tail; FFT peak cross-check; uncertain flag; note name + Hz | FR-120, FR-123 (data) | UT: synthetic kicks with known f0 (clean, tanh-distorted, pitch glide) detected to ±10 cents; disagreeing case flagged |
 | 1.12 | Transposition cache + Key Track: background ±12 st nearest-first, others on first play, LRU cap; real-time Repitch fallback (preallocated); key layer from Settings (Q6) | FR-121, FR-122, FR-124, FR-125, NFR-003, NFR-014, NFR-015 | UT: Gherkin "root F, note G → +2 st, fixed layers unchanged"; first output sample at the note-on offset (zero added latency); eviction under the cap; fallback path RT clean |
-| 1.13 | Processor state: full stack + settings + sample paths; missing samples reported, not crashing | FR-003 (stack part) | UT: Gherkin "save + reopen → bit-identical render" |
+| 1.13 ✓ | Processor state: full stack + settings + sample paths; missing samples reported, not crashing | FR-003 (stack part) | UT: Gherkin "save + reopen → bit-identical render" |
 | 1.14 | `tools/render-cli`: kick JSON → WAV; golden-file null test (−120 dBFS) | §12 | GT: 3 fixture kicks |
 | 1.15 | Dev editor (Q14): load kick JSON, per-layer basic controls, audition | — (temporary) | PO uses it in 1.17 |
 | 1.16 | Assumption-check harness: AC-1 cache RAM, AC-2 build time, AC-3 playback CPU, AC-4 latency; results in `docs/checks/M1.md` | AC-1–AC-4, NFR-002, NFR-014, NFR-015 | BM results recorded against targets |
@@ -199,6 +199,16 @@ LT-2 and AC-5 results. Tag `m1-done`.
 - 1.8: `core/render/RenderEngine` (std::thread worker, JUCE-free) hands renders to the audio thread through an
   atomic pointer guarded by hazard-pointer slots (`core/rt/HazardSlots.h`); the worker frees replaced renders.
   BM (dev machine, Release): re-render after a fader edit, 12 layers, 1 beat at 150 BPM: ~2 ms (target < 30 ms).
+- 1.9: `core/render/KickPlayer` (JUCE-free) holds two voices (ringing + new) in hazard slots of the render engine.
+  The processor splits each block at note-on positions (sample-accurate), ignores velocity and note-offs, and sums
+  Main + A1 + A2 to the output (no FX chains until M4). Audition API: `KlayProcessor::triggerAudition()`.
+- 1.10: the audio thread stores the playhead BPM in an atomic; a 20 Hz message-thread timer feeds
+  `render::TempoDebouncer` (150 ms settle, 0.005 BPM tolerance) and re-renders unless the manual override is on.
+- 1.11: YIN uses threshold 0.15, frames from the energy peak until −30 dB, settled tail = voiced frames after the
+  first 40 %; uncertain when YIN and the FFT peak differ by more than 50 cents. Results are memoised per processed
+  key-layer part (YIN alone took ~80 ms per render).
+- 1.13: the processor state is the full `model::Kick` JSON; parts load on the render thread through `SampleCache`
+  (session rate in the key); missing parts are listed by `getMissingSamples()` and stay silent.
 
 ## M2 Library + randomizer
 
