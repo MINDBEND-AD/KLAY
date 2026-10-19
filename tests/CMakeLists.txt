@@ -32,6 +32,7 @@ target_link_libraries(klay_core_tests PRIVATE klay_core klay_rt_harness Catch2::
 # Its include paths and JucePlugin_* definitions are borrowed instead of linking the JUCE modules a second time.
 add_executable(klay_tests
     plugin/AdapterTests.cpp
+    plugin/EditorTests.cpp
     plugin/PlaybackTests.cpp
     plugin/ProcessorTests.cpp)
 target_link_libraries(klay_tests PRIVATE klay_core klay_rt_harness KLAY Catch2::Catch2WithMain)
@@ -39,6 +40,7 @@ target_include_directories(klay_tests PRIVATE
     ${PROJECT_SOURCE_DIR}
     $<TARGET_PROPERTY:KLAY,INCLUDE_DIRECTORIES>)
 target_compile_definitions(klay_tests PRIVATE
+    KLAY_TEST_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/fixtures"
     $<TARGET_PROPERTY:KLAY,COMPILE_DEFINITIONS>)
 
 foreach(target klay_rt_harness klay_core_tests klay_tests)

@@ -232,6 +232,9 @@ LT-2 and AC-5 results. Tag `m1-done`.
   `tests/fixtures/kicks/{punch,stack,repitch}.json` use synthetic parts from `klay-render fixtures` (committed, 24-bit)
   and committed goldens; two must-fail ctests (0.1 dB fader change, different length) prove the null test bites.
   Goldens were made on the dev machine; CI on another CPU may differ in the last bits of libm, which −120 dBFS covers.
+- 1.15: dev editor built (plugin/PluginEditor, `KickFiles.h` for JSON load/save with relative part paths). Not ticked:
+  its verification is the PO using it for the 1.17 checks (`docs/checks/M1.md`). Rows are built for the layer count at
+  open (6 by default); a kick with more layers needs the editor reopened.
 - Session stop (2026-10-19): 1.12 (cache part), 1.14–1.17 are open; status, open PO decisions and the verified
   build/ctest/pluginval results are in `docs/checks/M1.md`. 1.12 is not ticked: the real-time Repitch fallback and
   Key Track are done and tested, the background transposition cache is not.

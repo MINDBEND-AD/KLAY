@@ -22,7 +22,8 @@ target_sources(KLAY PRIVATE
     PluginProcessor.cpp
     PluginProcessor.h
     PluginEditor.cpp
-    PluginEditor.h)
+    PluginEditor.h
+    KickFiles.h)
 
 target_compile_definitions(KLAY
     PUBLIC
