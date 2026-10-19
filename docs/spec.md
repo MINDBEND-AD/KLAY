@@ -4,7 +4,7 @@ Oct 19, 2026 · @Bernard
 
 ## 1. Document control & purpose
 
-This is version 0.6 (draft) of the requirements and specification for KLAY (working title), a layer-based kick drum plugin inspired by a commercial layer-based kick plugin. Its job is to give the coding session a single, testable source of truth.
+This is version 0.7 (draft) of the requirements and specification for KLAY (working title), a layer-based kick drum plugin inspired by a commercial layer-based kick plugin. Its job is to give the coding session a single, testable source of truth.
 
 - **Scope:** a VST3 instrument plugin for Windows that stacks sample layers into a kick, processes it through a modular FX rack, and exports the result. Version 1 is a pure sample player with no genre style targets.
 - **Out of scope (v1):** synthesis (planned for version 2), genre style targets, macOS / AU / AAX, standalone app, copy protection and licensing, distribution, stem export (version 2), sequencing.
@@ -45,10 +45,10 @@ The primary user is a techno or hard-dance producer working at 135–160+ BPM wh
 
 **Key use cases**
 
-1. **UC-1 Roll a kick:** press Randomize All, audition via MIDI or the play button, repeat or undo.
-2. **UC-2 Refine a layer:** select a layer, swap its part, lock the rest, adjust offset, volume envelope, pitch and fader level.
+1. **UC-1 Roll a kick:** press Forge, audition via MIDI or the play button, repeat or undo.
+2. **UC-2 Refine a layer:** select a layer, swap its sample, lock the rest, adjust offset, volume envelope, pitch and fader level.
 3. **UC-3 Play in key:** key detection on layer 1 (Kick) sets the root; MIDI notes transpose all pitch-following layers in real time.
-4. **UC-4 Process:** build the Main and two Aux chains from the module sidebar, route layers to an aux chain, tweak modules, lock chains while re-rolling layers.
+4. **UC-4 Process:** build the Main and two Aux chains from the module sidebar, route layers to an aux chain, tweak modules, lock chains while reforging layers.
 5. **UC-5 Bring own sounds:** drag a folder in; it becomes a library usable in pickers and rolls.
 6. **UC-6 Export:** drag the master (incl. all FX chains) into the DAW timeline as WAV.
 7. **UC-7 Recall:** project reopens with identical sound (state saved in the host session).
@@ -57,18 +57,18 @@ The primary user is a techno or hard-dance producer working at 135–160+ BPM wh
 
 | Term | Meaning in this document |
 | --- | --- |
-| Part | One audio sample loaded into a layer |
-| Layer | A position in the stack (6 default, 12 max) holding one part; default names Kick, Rumble, Drive, Crunch, Transient, Texture, then Layer 7–12, renamable by double-click, with its own offset, volume envelope, fader, pitch, stretch, role and routing |
+| Part | Internal term for the audio sample loaded into a layer; the UI says layer or sample, never part |
+| Layer | A position in the stack (6 default, 12 max) holding one sample; default names Kick, Rumble, Drive, Crunch, Transient, Texture, then Layer 7–12, renamable by double-click, with its own offset, volume envelope, fader, pitch, stretch, role and routing |
 | Kick (layer 1) | The main kick body; carries the fundamental and is the key layer by default |
 | Crunch (layer 4) | Distorted, pitched low-end tail that follows the punch |
 | Rumble (layer 2) | Reverberated, filtered low-end bed after the kick (typical in hard techno) |
 | Transient (layer 5) | Short high-frequency attack layer for definition |
 | Drive (layer 3) / Texture (layer 6) | Drive: saturated layer adding density; Texture: extra noise, tops or reverb layer |
-| Role | The kind of part a layer holds (Kick, Rumble, Drive, Crunch, Transient, Texture or Any); layers 1–6 default to the role of their name; rolls draw from that role's pool |
+| Role | The kind of sample a layer holds (Kick, Rumble, Drive, Crunch, Transient, Texture or Any); layers 1–6 default to the role of their name; rolls draw from that role's pool |
 | Roll | One randomization action producing a new kick |
 | FX chain | Ordered list of FX modules with settings, saveable as a preset; there are three: Main, Aux 1, Aux 2 |
 | Render | Offline bounce of the stack (and, for export, all three FX chains) to an audio buffer |
-| Key Track | Mode where incoming MIDI notes transpose pitch-following parts |
+| Key Track | Mode where incoming MIDI notes transpose pitch-following layers |
 | Aux chain / routing | One of two parallel FX chains; a layer is routed to it all or nothing, and its output is mixed with the Main-routed layers before the Main chain |
 | Volume envelope | Drawable gain curve per layer over the kick length, snapped to a grid; replaces fades and sidechain ducking |
 | Selected layer | The layer whose card was clicked last (layer 1 by default); the visualiser shows it in colour and edits its envelope |
@@ -90,7 +90,7 @@ Version 1 targets one format on one platform: VST3 on Windows 10+ x64. The core 
 | FR-001 | Accept MIDI note-on to trigger the kick; velocity is ignored (every hit plays at full level) | Must |
 | FR-002 | Read host tempo and transport; manual BPM override, default 155 BPM; a changed value persists across reloads until changed again | Must |
 | FR-003 | Save and restore full state (stack, routing, volume envelopes, all three FX chains, settings, user sample references) via host session | Must |
-| FR-004 | Output stereo; the Mono dial on the Kick page (FR-216) makes the low end mono. A duplicate on the Finalizer follows in version 2 for per-layer export | Must |
+| FR-004 | Output stereo; the Mono dial on the Kick page (FR-216) makes the low end mono. A duplicate on the Temper module follows in version 2 for per-layer export | Must |
 | FR-005 | Support sample rates 44.1–192 kHz and buffer sizes 16–4096 | Must |
 | FR-006 | Expose only real-time parameters for host automation. MVP: master gain, aux return levels, aux mutes, Mono and TP. FX module parameters follow in M6 through a fixed set of automation slots, since modules are added and removed at runtime. Layer parameters baked into the offline render (fader, pitch, stretch, envelope) are not automatable | Should |
 | FR-007 | Validate in Windows VST3 hosts: Ableton Live, FL Studio, Bitwig, Reaper, Cubase, Studio One. M0 and the MVP smoke tests use Ableton Live, Reaper and FL Studio; the others follow when available | Must |
@@ -110,8 +110,8 @@ Requirements are grouped by subsystem; each maps to a module in section 10.
 | FR-102 | Per layer: time offset (sample-accurate, Shift+drag on the waveform), start trim and end trim (handles at the left and right edges of the waveform in Layer view) | Must |
 | FR-103 | Per layer: drawable volume envelope (section 7.8); replaces separate fades | Must |
 | FR-104 | Per layer, Pitch mode (FR-106): pitch ±12 semitones and ±100 cents without changing length (Signalsmith Stretch) | Must |
-| FR-105 | **Per layer: length change without pitch change**, 0.25×–8×, in Stretch mode (FR-106), using Signalsmith Stretch — top priority of the pitch/length features | Must |
-| FR-106 | Per layer: one knob and a three-way mode switch, default Stretch. Stretch: changes length only, 0.25–8×, pitch unchanged (Signalsmith Stretch, FR-105). Pitch: changes pitch only, ±12 st and ±100 ct, length unchanged (Signalsmith Stretch, FR-104). Repitch: tape-style varispeed, length and pitch change together, 0.25–8×, with the resulting pitch shown in the readout (JUCE LagrangeInterpolator). Only the active mode is applied, so a layer is either stretched, pitched or repitched. Each mode keeps its own value; switching modes applies that mode's stored value and is one undo step. Replaces the v0.4 behaviour (separate Pitch and Stretch knobs); scheduled for the second pass of M1 | Must |
+| FR-105 | **Per layer: length change without pitch change**, 0.25×–8×, in Length mode (FR-106), using Signalsmith Stretch — top priority of the pitch/length features | Must |
+| FR-106 | Per layer: one knob and a three-way mode switch, default Length. Length: changes length only, 0.25–8×, pitch unchanged (Signalsmith Stretch, FR-105). Pitch: changes pitch only, ±12 st and ±100 ct, length unchanged (Signalsmith Stretch, FR-104). Tape: tape-style varispeed (repitch), length and pitch change together, 0.25–8×, with the resulting pitch shown in the readout (JUCE LagrangeInterpolator). Only the active mode is applied, so a layer is either stretched, pitched or repitched. Each mode keeps its own value; switching modes applies that mode's stored value and is one undo step. Replaces the v0.4 behaviour (separate Pitch and Stretch knobs); scheduled for the second pass of M1 | Must |
 | FR-107 | Stack is rendered offline whenever a layer edit occurs, into three cached buses (Main-routed, Aux 1, Aux 2), each split into pitch-following and fixed layers for real-time Key Track (FR-125); playback reads the cache | Must |
 | FR-108 | Kick length set in Settings as a note value: 1/16, 1/8, 1/4 (default), 1/2, 1 bar; converted to ms from host BPM; defines visualiser, render and export length, with a 5 ms soft fade at the end. Envelope points keep their absolute time when the length changes | Must |
 | FR-109 | Autogain (on/off in Settings, default On): one gain, computed from the summed pre-FX buses (Main, Aux 1, Aux 2) and applied equally to all of them, normalises the rendered stack to a target peak (default −0.3 dBFS) before the FX chains | Should |
@@ -122,7 +122,7 @@ Requirements are grouped by subsystem; each maps to a module in section 10.
 | FR-114 | Default layer names: 1 Kick, 2 Rumble, 3 Drive, 4 Crunch, 5 Transient, 6 Texture, 7–12 "Layer N"; double-click renames any layer. Layer 1 (Kick) is the key layer | Must |
 | FR-115 | Monophonic playback: a new note-on cuts the ringing kick with a 5 ms fade | Must |
 | FR-116 | Audition button in the top bar (and space bar) plays the kick | Must |
-| FR-117 | Render in place on the layer card: bake the current mode's result into the layer's part, reset the knob to neutral, then apply another mode (for example pitch first, render, then set the length). Undoable; the original part stays available | Won't (v1) — version 2 |
+| FR-117 | Render in place on the layer card: bake the current mode's result into the layer's sample, reset the knob to neutral, then apply another mode (for example pitch first, render, then set the length). Undoable; the original part stays available | Won't (v1) — version 2 |
 
 **Listening test LT-1 — length change (run in M1, before stretch settings are locked)**
 
@@ -131,7 +131,7 @@ Requirements are grouped by subsystem; each maps to a module in section 10.
 3. **Listen for:** transient smearing on punches, phasiness or metallic artefacts in tails, pre-echo, low-end loss, level change.
 4. **Method:** level-matched blind A/B on monitors and headphones, then inside a full stacked kick.
 5. **Pass:** no audible transient smear on punches between 0.75× and 1.5×; tails usable between 0.5× and 2×.
-6. **Record:** results, chosen preset and parameters go in the decision log. If punches fail, default punch layers to Repitch and evaluate Bungee as fallback.
+6. **Record:** results, chosen preset and parameters go in the decision log. If punches fail, default punch layers to Tape mode and evaluate Bungee as fallback.
 
 ### 7.2 Pitch & key
 
@@ -149,12 +149,12 @@ Requirements are grouped by subsystem; each maps to a module in section 10.
 | ID | Requirement | Priority |
 | --- | --- | --- |
 | FR-140 | Each layer has a role (Kick, Rumble, Drive, Crunch, Transient, Texture or Any); layers 1–6 default to the role of their name; rolls draw only from that role's pool | Must |
-| FR-141 | Randomize All: draw a new sample for each unlocked layer in the roll template (FR-146) from its role pool; all other layers stay as they are, or empty. Only samples are replaced — fader, envelope, offset, pitch, stretch, routing and FX stay | Must |
-| FR-142 | Randomize one layer from its role's pool; as FR-141, only the sample is replaced | Must |
+| FR-141 | Forge: draw a new sample for each unlocked layer in the roll template (FR-146) from its role pool; all other layers stay as they are, or empty. Only samples are replaced — fader, envelope, offset, pitch, stretch, routing and FX stay | Must |
+| FR-142 | Reforge one layer (↻ on its card) from its role's pool; as FR-141, only the sample is replaced | Must |
 | FR-143 | Locked layers are never changed by rolls; mute/solo persist | Must |
 | FR-144 | Dropped (Chaos option no longer required) | — |
 | FR-145 | Undo/redo of all edits — layers, envelopes, routing, FX chains and settings (≥ 50 steps); Ctrl+Z / Ctrl+Shift+Z | Must |
-| FR-146 | Roll template: user-editable set of layers (in Settings) that Randomize All re-rolls (default: layers 1–3, Kick, Rumble, Drive) | Should |
+| FR-146 | Roll template: user-editable set of layers (in Settings) that Forge re-rolls (default: layers 1–3, Kick, Rumble, Drive) | Should |
 | FR-147 | Seeded RNG so a roll can be reproduced from its seed (debugging and preset sharing) | Should |
 | FR-148 | Option to restrict rolls to selected library folders (factory or user) | Could |
 
@@ -184,28 +184,28 @@ Requirements are grouped by subsystem; each maps to a module in section 10.
 | FR-207 | Every module: dry/wet mix, output trim, output meter | Must |
 | FR-208 | FX chain presets saved per chain; any saved chain loads into Main, Aux 1 or Aux 2; Lock per chain persists across rolls and kick preset loads | Must |
 | FR-209 | Per-module factory presets | Should |
-| FR-210 | All chains processed in real time on playback; Drag Master renders offline through all three chains | Must |
+| FR-210 | All chains processed in real time on playback; Export all renders offline through all three chains | Must |
 | FR-211 | A module dragged from one chain into another is inserted at the drop position with its current settings, not defaults; a plain drag moves it, Ctrl+drag copies it | Must |
-| FR-212 | Global oversampling with two settings: Live (Off / 2× / 4×, default 2×) for playback, Export (2× / 4× / 8×, default 8×) for Drag Master. Host-driven offline renders (bounce, freeze) always use 8×, not editable; documented in the user manual (chapter 15) | Must |
-| FR-213 | Oversampling is applied only inside modules that create harmonics (Distortion, Filters Drive, Finalizer clipper, any other saturating stage); linear modules run at the host rate; no per-module oversampling control in v1 | Must |
+| FR-212 | Global oversampling with two settings: Live (Off / 2× / 4×, default 2×) for playback, Export (2× / 4× / 8×, default 8×) for Export all. Host-driven offline renders (bounce, freeze) always use 8×, not editable; documented in the user manual (chapter 15) | Must |
+| FR-213 | Oversampling is applied only inside modules that create harmonics (Distortion, Filters Drive, Temper clipper, any other saturating stage); linear modules run at the host rate; no per-module oversampling control in v1 | Must |
 | FR-214 | Internal delay compensation: Main-routed layers, Aux 1 and Aux 2 are time-aligned before they are summed into the Main chain; total latency is reported to the host | Must |
-| FR-215 | Equalizer, Mid/Side EQ and Filters use matched ("de-cramped") biquad designs after Vicanek (2016), so bell, shelf and cut shapes stay correct up to Nyquist without oversampling | Must |
-| FR-216 | Mono dial: elliptical filter on the master output after the Main chain — the side signal is high-passed at the cutoff, so everything below is mono and the mid is untouched. Cutoff 0 (off, no processing) to 500 Hz, default 120 Hz; filter slope set in Settings; included in Drag Master | Must |
+| FR-215 | EQ, Mid/Side EQ and Filters use matched ("de-cramped") biquad designs after Vicanek (2016), so bell, shelf and cut shapes stay correct up to Nyquist without oversampling | Must |
+| FR-216 | Mono dial: elliptical filter on the master output after the Main chain — the side signal is high-passed at the cutoff, so everything below is mono and the mid is untouched. Cutoff 0 (off, no processing) to 500 Hz, default 120 Hz; filter slope set in Settings; included in Export all | Must |
 | FR-217 | Master fader (top bar output meter): −∞ to 0 dB maximum, default 0 dB; no positive gain at the master output | Must |
-| FR-218 | TP (true-peak) switch next to the master meter, default Off. On: a true-peak clipper as the very last stage (after the Mono dial and master fader) holds the output at or below 0 dBTP, measured at the global oversampling factor (Live for playback, Export for Drag Master, 8× for host offline renders; FR-212). With Live set to Off, TP limits sample peaks only during playback; the Live Off warning says so (UI-017); its latency is reported to the host; the meter reads dBTP. Included in Drag Master. True-peak handling lives here only, not in the Finalizer | Must |
+| FR-218 | TP (true-peak) switch next to the master meter, default Off. On: a true-peak clipper as the very last stage (after the Mono dial and master fader) holds the output at or below 0 dBTP, measured at the global oversampling factor (Live for playback, Export for the Export all render, 8× for host offline renders; FR-212). With Live set to Off, TP limits sample peaks only during playback; the Live Off warning says so (UI-017); its latency is reported to the host; the meter reads dBTP. Included in Export all. True-peak handling lives here only, not in the Temper module | Must |
 
 Module backlog in build order (MVP set in bold):
 
 | Module | v1 scope |
 | --- | --- |
 | **Distortion** | Ten modes incl. Tape, Tube and three Amp modes; drive, bias, character, tone (7.5.2); oversampling from the global setting (FR-212) |
-| **Equalizer** | 4 bands: low cut, two parametric bands, high cut (7.5.3); note-name frequency entry; matched biquads (FR-215) |
-| **Finalizer** | Low-shelf boost, clipper with clip indicator; mono-below option added in version 2 (the global option covers v1) |
+| **EQ** | 4 bands: low cut, two parametric bands, high cut (7.5.3); note-name frequency entry; matched biquads (FR-215) |
+| **Temper** | Low-shelf boost, clipper with clip indicator; mono-below option added in version 2 (the global option covers v1) |
 | **Filters** | LP/HP/BP/notch/all-pass with selectable slopes and a filter drive (7.5.4), matched biquads (FR-215); comb and phaser later |
 | Transient Shaper | Attack amount, sustain, speed |
 | Mid/Side EQ | Low-cut on side, simple bands on mid |
-| Multiband | 3-band up/down compression, crossovers, per-band gain |
-| Convolver | IR loader, tempo-synced envelope on the wet signal |
+| Split Dynamics | 3-band up/down compression, crossovers, per-band gain |
+| Space | IR loader, tempo-synced envelope on the wet signal |
 
 The reference's Kick Shaper module is dropped: the per-layer volume envelope covers it, and also replaces sidechain ducking.
 
@@ -225,7 +225,7 @@ Every FX module follows these rules; module-specific specs only add to them.
 | FR-227 | Mix 0% fully bypasses the effect, latency kept | Must |
 | FR-228 | Out −12 to +12 dB, default 0 dB; no automatic gain compensation | Must |
 | FR-229 | Drive control (input gain) on the Distortion module only: 0 to +36 dB, default 0 dB; no separate Input control (7.5.2) | Must |
-| FR-230 | Every module has a peak output meter; dynamics modules (Multiband, Transient Shaper) also show gain reduction | Must |
+| FR-230 | Every module has a peak output meter; dynamics modules (Split Dynamics, Transient Shaper) also show gain reduction | Must |
 | FR-231 | Stereo linked processing; mid/side only in modules built for it (Mid/Side EQ) | Must |
 | FR-232 | One interface for all modules: prepare (sample rate, block size), process, reset, latency, state save/load, parameter list | Must |
 | FR-233 | Each module reports its latency, including oversampling; the chain sums and compensates it (FR-214) | Must |
@@ -299,9 +299,9 @@ Distortion is a single waveshaping stage with ten curve types, Drive, Bias and o
 - [x] Drive range 0 to +36 dB, default 0 dB, merged with Input (decided 2026-10-18).
 - [ ] Factory preset names and count — content from you, as with the samples.
 
-### 7.5.3 Equalizer
+### 7.5.3 EQ
 
-The Equalizer has four bands in fixed order: low cut, two fully parametric bands, high cut. It loads flat: both cuts off, both bands at 0 dB. All filters are matched biquads (FR-215), run at the host rate and add no latency.
+The EQ has four bands in fixed order: low cut, two fully parametric bands, high cut. It loads flat: both cuts off, both bands at 0 dB. All filters are matched biquads (FR-215), run at the host rate and add no latency.
 
 **Bands**
 
@@ -373,9 +373,9 @@ Filters is a single filter with five types (LP, HP, BP, Notch, AP), a slope swit
 - [x] Drive position: switchable Pre/Post, default Pre (decided 2026-10-18).
 - [x] Drive range 0 to +36 dB, matching the Distortion (decided 2026-10-18).
 
-### 7.5.5 Finalizer
+### 7.5.5 Temper
 
-The Finalizer is the last-stage module: a low-shelf boost for weight, then a clipper that holds peaks under a ceiling and shows what it clips. The shelf is a matched biquad at the host rate; only the clipper is oversampled (FR-213). It loads neutral: no boost, no clip gain, ceiling 0 dBFS, so a signal below 0 dBFS passes untouched: while Clip gain is 0 dB and the block peak stays below the ceiling, the clipper path is bypassed with its latency kept, so the output is bit-identical; otherwise neutral settings null better than −90 dB. Mono-below is covered by the global Mono dial in v1 (FR-216).
+Temper is the last-stage module: a low-shelf boost for weight, then a clipper that holds peaks under a ceiling and shows what it clips. The shelf is a matched biquad at the host rate; only the clipper is oversampled (FR-213). It loads neutral: no boost, no clip gain, ceiling 0 dBFS, so a signal below 0 dBFS passes untouched: while Clip gain is 0 dB and the block peak stays below the ceiling, the clipper path is bypassed with its latency kept, so the output is bit-identical; otherwise neutral settings null better than −90 dB. Mono-below is covered by the global Mono dial in v1 (FR-216).
 
 **Signal path**
 
@@ -410,7 +410,7 @@ The Finalizer is the last-stage module: a low-shelf boost for weight, then a cli
 **Open points**
 
 - [x] Out keeps the common ±12 dB; the output is protected at the master instead — master fader max 0 dB (FR-217), TP switch (FR-218) (decided 2026-10-18).
-- [x] No true-peak mode in the Finalizer; true peak is handled by the master TP switch (FR-218) (decided 2026-10-18).
+- [x] No true-peak mode in Temper; true peak is handled by the master TP switch (FR-218) (decided 2026-10-18).
 
 ### 7.6 Presets & state
 
@@ -427,11 +427,11 @@ The Finalizer is the last-stage module: a low-shelf boost for weight, then a cli
 
 | ID | Requirement | Priority |
 | --- | --- | --- |
-| FR-260 | Drag Master: drag a WAV of the rendered kick incl. all three FX chains into the host | Must |
-| FR-261 | Drag Stems: one WAV per active part (pre-FX) — deferred to version 2 | Won't (v1) |
+| FR-260 | Export all: drag a WAV of the rendered kick incl. all three FX chains into the host | Must |
+| FR-261 | Export layer: one WAV per active layer (pre-FX) — deferred to version 2 | Won't (v1) |
 | FR-262 | Export format: 24-bit WAV at host sample rate with deterministic TPDF dither (fixed seed, keeps NFR-009); optional 32-bit float without dither. Review before the MVP release: dither yes or no? The current default stays until then | Must |
 | FR-263 | Export file names encode preset name, key and BPM (e.g. `MyKick_F#1_150bpm.wav`) | Should |
-| FR-264 | Export also via a save dialog from the Drag Master button's menu (for hosts with poor drag support) | Must |
+| FR-264 | Export also via a save dialog from the Export all button's menu (for hosts with poor drag support) | Must |
 
 ### 7.8 Volume envelope editor
 
@@ -453,32 +453,32 @@ Two main pages, Kick (default) and FX, switched from the top bar. The library is
 
 | ID | Requirement | Priority |
 | --- | --- | --- |
-| UI-001 | Top bar: page switch (Kick / FX), Randomize All, undo/redo, Audition button (play icon), preset field with ‹ › arrows inside its frame and an unsaved dot, floppy-disc icon to save / save as, Settings menu (cog icon + "Settings" label), output meter/master fader (max 0 dB, FR-217) with a TP true-peak switch (FR-218) | Must |
+| UI-001 | Top bar: page switch (Kick / FX), Forge, undo/redo, Audition button (play icon), preset field with ‹ › arrows inside its frame and an unsaved dot, floppy-disc icon to save / save as, Settings menu (cog icon + "Settings" label), output meter/master fader labelled MASTER (max 0 dB, FR-217) with a TP true-peak switch (FR-218) | Must |
 | UI-002 | Kick page: library as a left sidebar (factory samples, user libraries, presets); samples dragged from it onto layer cards; a toggle in the sidebar header hides and shows it | Must |
 | UI-003 | Visualiser default view **Layer**: the selected layer's waveform in its card colour, all other layers greyed out. View **Sum**: all layers combined, taken from the master output including all FX (a display-only background render through all chains, Mono, master fader and TP at the Live oversampling factor) | Must |
 | UI-004 | In Layer view the volume envelope editor (section 7.8) is overlaid on the waveform with its snap grid; Shift+drag on the waveform moves the layer in time; handles at the waveform's left and right edges set start and end trim (FR-102) | Must |
 | UI-005 | Time axis spans the kick length (FR-108); labels toggle between beats and ms (ms from host BPM) | Should |
 | UI-006 | Clip toggle, active in Sum view only: highlights master-output samples above 0 dBFS | Should |
-| UI-007 | Layer card: colour dot, layer name (double-click to rename), bin icon top right (disabled when locked); role selector; ◀ ▶ part browsing; mini waveform with the part name; one layer knob with a three-way switch directly below it: Stretch · Pitch · Repitch (FR-106, default Stretch); the knob's label, range and readout follow the mode (Length 0.25–8×, Pitch ±12 st ±100 ct, Speed 0.25–8× with the resulting pitch); vertical volume fader on the right with the routing button below it (MAIN / A1 / A2, click cycles); buttons L lock, M mute, S solo, P pitch-follow, ↻ re-roll. The selected card is highlighted | Must |
+| UI-007 | Layer card: colour dot, layer name (double-click to rename), bin icon top right (disabled when locked); role selector; ◀ ▶ to browse samples for the layer; mini waveform with the layer's file name; one layer knob with a three-way switch directly below it: Length · Pitch · Tape (FR-106, default Length); the knob's label, range and readout follow the mode (Length 0.25–8×, Pitch ±12 st ±100 ct, Speed 0.25–8× with the resulting pitch); vertical volume fader on the right with the routing button below it (MAIN / A1 / A2, click cycles); buttons L lock, M mute, S solo, P pitch-follow, ↻ reforge. The selected card is highlighted | Must |
 | UI-008 | FX page: left sidebar listing all FX modules; three chain columns side by side (Main, Aux 1, Aux 2); modules dragged from the sidebar into a chain and reordered by drag | Must |
 | UI-009 | Each module row has a ▼ icon that expands it to show all controls and a ▲ icon that collapses it again; a bin icon deletes the module (same icon as on the layer cards). Any number of modules can be expanded at once; an expanded view pushes the content below it down | Must |
 | UI-010 | The FX page scrolls vertically when content exceeds the window height | Must |
-| UI-011 | Chain column header: chain name, bypass, lock, chain preset load/save; aux columns also show return level and mute | Must |
+| UI-011 | Chain column header: chain name, bypass, lock (icon only, tooltip “Keep this chain when forging”), chain preset load/save; aux columns also show return level and mute | Must |
 | UI-012 | EQ and Filters show the live output spectrum behind the curve; the EQ shades boosts and cuts (FR-312, FR-323) | Must |
-| UI-013 | Resizable window (XS–XL presets + drag corner), vector-drawn UI, HiDPI | Must |
+| UI-013 | Resizable window (size presets 75 %, 100 %, 125 %, 150 %, 200 % + drag corner), vector-drawn UI, HiDPI | Must |
 | UI-014 | Colour themes (min. 2: dark default + one alternative) | Could |
 | UI-015 | Keyboard: Ctrl+Z, Ctrl+Shift+Z, space to audition | Should |
 | UI-016 | Tooltips on every control; double-click resets to default; Ctrl-drag for fine adjust on knobs and faders (Ctrl+drag on an FX module's header copies the module instead, FR-211) | Should |
-| UI-017 | Settings menu: kick length, envelope grid (4×4 / 8×8 / 16×16), roll template, key layer, host-tempo sync or manual BPM (default 155), restore or reset on launch, oversampling Live / Export (warning when Live is Off: distortion may alias, and the TP switch can no longer catch peaks between samples during playback), Mono filter slope (6 / 12 / 24 / 48 dB/oct, default 12), autogain on/off (FR-109, default On), library preview on click (On/Off, default On; UI-024), colour theme, window size | Must |
-| UI-018 | Mono dial above the visualiser, left of Drag Master, labelled "Mono" only. A value arc around the dial shows the setting (empty arc = Off); the Hz value pops up on hover and while dragging (UI-019). Range 0 (Off) to 500 Hz, default 120 Hz, logarithmic travel | Must |
-| UI-019 | All dials share one behaviour: a value arc around the dial (empty at minimum or Off); the value pops up on hover and while dragging; a soft catch at the default value while dragging; double-click resets to default; right-click opens a field to type an exact value; Ctrl+drag and the mouse wheel give fine steps. Travel is linear for every dial except Mono (UI-018) and the layer knob in Stretch and Repitch mode, which are logarithmic; the layer volume fader uses a top-weighted taper (FR-101) | Must |
+| UI-017 | Settings menu: kick length, envelope grid (4×4 / 8×8 / 16×16), roll template, key layer, host-tempo sync or manual BPM (default 155), on open: last session or empty kick, oversampling Live / Export (warning when Live is Off: distortion may alias, and the TP switch can no longer catch peaks between samples during playback), Mono filter slope (6 / 12 / 24 / 48 dB/oct, default 12), autogain on/off (FR-109, default On), library preview on click (On/Off, default On; UI-024), colour theme, window size | Must |
+| UI-018 | Mono dial above the visualiser, left of Export all, labelled "Mono" only. A value arc around the dial shows the setting (empty arc = Off); the Hz value pops up on hover and while dragging (UI-019). Range 0 (Off) to 500 Hz, default 120 Hz, logarithmic travel | Must |
+| UI-019 | All dials share one behaviour: a value arc around the dial (empty at minimum or Off); the value pops up on hover and while dragging; a soft catch at the default value while dragging; double-click resets to default; right-click opens a field to type an exact value; Ctrl+drag and the mouse wheel give fine steps. Travel is linear for every dial except Mono (UI-018) and the layer knob in Length and Tape mode, which are logarithmic; the layer volume fader uses a top-weighted taper (FR-101) | Must |
 | UI-020 | Default theme “Forge”: gunmetal neutrals (body #111214, panel #1c1e21, edge #3a3d42, text #e9e5de, dim text #959089) with chamfered panel corners. Ember #ff5a1f is the only colour for on and selected, and the only colour that glows (soft bloom on the visualiser trace, values, meters and active controls). Bronze #c58b4b marks section headings, the Main route, trim handles and fader caps, never an on state. Amber #e0b04a means muted or a warning; red #ff3b30 means clipping only. Layer names are white. Fonts: Saira Condensed for labels, JetBrains Mono for values (both SIL Open Font License) | Must |
-| UI-021 | Meters (OUT and module peak meters) use a temper scale: dull red at low level, through ember, to white at 0 dBFS; the clip LED turns red and holds for 1 s | Should |
+| UI-021 | Meters (MASTER and module peak meters) use a temper scale: dull red at low level, through ember, to white at 0 dBFS; the clip LED turns red and holds for 1 s | Should |
 | UI-022 | Layer card states: selected = ember edge with glow; muted = amber M and a dimmed waveform; soloed = ember S, other layers dimmed; locked = LOCKED badge and the bin disabled; empty = dashed outline, “Drop a sample here” and a Roll button; drop target = ember dashed outline with the file name; missing sample = amber edge plus a message with Relink… | Must |
 | UI-023 | Value pop-ups (UI-019) draw above every panel and are never clipped by a panel edge; near the top of the window they appear below the control | Must |
 | UI-024 | Library preview: a single click on a sample plays it. Settings → Library preview On/Off, default On; with Off, nothing plays until the sample is on a layer and the kick is triggered | Should |
 | UI-025 | Collapsing the library leaves a 40 px rail: expand button, search, one button per role. A role button expands the library opened at that role, and the role row is briefly highlighted. The visualiser and layer cards take the freed width; the window size does not change | Must |
-| UI-026 | Window size M is 1180 × 760 px; XS–XL scale from it (UI-013); at XS the library starts collapsed | Should |
+| UI-026 | Window size M is 1180 × 760 px; it is the 100 % size, and 75–200 % scale from it (UI-013); at 75 % the library starts collapsed | Should |
 | UI-027 | Key display states (FR-120, FR-123): detected = note and Hz in ember; uncertain = amber with “?” after the note; none = “—” | Should |
 | UI-028 | Layer fader scale (FR-101): ticks at 0, −3, −6, −12, −24 dB and −∞; half the travel covers 0 to about −13 dB | Should |
 | UI-029 | The preset field shows FACTORY or USER before the preset name; the visualiser footer shows the selected layer's offset, trim range and envelope point count | Could |
@@ -493,11 +493,11 @@ Layer 1 is selected: its waveform shows in its card colour with the volume envel
 
 ![FX page wireframe · module sidebar, Main / Aux 1 / Aux 2 chain columns, one module expanded](wireframes/fx-page.png)
 
-Distortion in the Main chain is expanded to show its controls; Equalizer, Finalizer and the Aux 1 modules are collapsed, and Aux 2 is still empty.
+Distortion in the Main chain is expanded to show its controls; EQ, Temper and the Aux 1 modules are collapsed, and Aux 2 is still empty.
 
-![MVP modules expanded · Equalizer, Filters, Finalizer at their defaults](wireframes/fx-modules-expanded.png)
+![MVP modules expanded · EQ, Filters, Temper at their defaults](wireframes/fx-modules-expanded.png)
 
-Equalizer, Filters and Finalizer follow the common module layout (FR-221): display on top, module controls, then Mix, Out and the peak meter (specs in 7.5.3–7.5.5).
+EQ, Filters and Temper follow the common module layout (FR-221): display on top, module controls, then Mix, Out and the peak meter (specs in 7.5.3–7.5.5).
 
 ![Settings menu wireframe · panel under the cog, five groups](wireframes/settings-menu.png)
 
@@ -513,7 +513,7 @@ The audio thread must never block: no allocation, locks, file I/O or logging ins
 | NFR-002 | CPU per instance at 48 kHz / 128 samples, three chains with 9 modules in total | < 5% of one modern core (to confirm on reference machine) |
 | NFR-003 | Added latency | No added latency from Key Track pitch shifting (FR-125); oversampling latency reported to the host, paths aligned (FR-214) |
 | NFR-004 | Re-render time of the stack after an edit (12 layers, 1 beat at 150 BPM) | < 30 ms, on a background thread |
-| NFR-005 | Randomize All to audible result | < 100 ms |
+| NFR-005 | Forge to audible result | < 100 ms |
 | NFR-006 | UI frame rate during playback | ≥ 30 fps, visualiser never blocks audio |
 | NFR-007 | Memory: factory library streamed or lazy-loaded | < 300 MB RAM per instance |
 | NFR-008 | Startup time of a new instance | < 1.5 s with index cached |
@@ -524,7 +524,7 @@ The audio thread must never block: no allocation, locks, file I/O or logging ins
 | NFR-013 | Thread-safe parameter and state transfer UI ↔ audio (lock-free FIFOs / atomics) | Required |
 | NFR-014 | RAM for the Key Track transposition cache (all buses, 48 kHz) | < 128 MB per instance; above that the least recently played notes are evicted (estimate, confirm with AC-1) |
 | NFR-015 | Transposition cache rebuild after an edit, in the background | Root ±2 semitones < 100 ms, ±12 < 1 s, other notes on first play (confirm with AC-2) |
-| NFR-016 | Drag Master render time with 8× export oversampling (1-bar kick, full chains) | < 1 s (to confirm in M5) |
+| NFR-016 | Export all render time with 8× export oversampling (1-bar kick, full chains) | < 1 s (to confirm in M5) |
 
 ## 10. Architecture & technology decisions
 
@@ -583,11 +583,11 @@ Every Must requirement needs at least one automated test or a scripted manual ch
 | Performance | CPU and render-time targets from section 9 | Benchmark harness in CI |
 | Latency alignment | Main and aux paths sum without offset at every oversampling setting (FR-214), null test against a reference | Render CLI |
 | Listening test | LT-1 length change (section 7.1) | Manual, results in decision log |
-| Export and cache performance | Drag Master render time (NFR-016), transposition cache build time and RAM (NFR-014, NFR-015) | Benchmark harness in CI |
+| Export and cache performance | Export all render time (NFR-016), transposition cache build time and RAM (NFR-014, NFR-015) | Benchmark harness in CI |
 
 **Acceptance criteria examples (Gherkin style)**
 
-- *Given* layer 2 locked and layer 3 set to role Crunch, *when* the user presses Randomize All, *then* layer 2 is unchanged and layer 3 holds a sample from the Crunch pool.
+- *Given* layer 2 locked and layer 3 set to role Crunch, *when* the user presses Forge, *then* layer 2 is unchanged and layer 3 holds a sample from the Crunch pool.
 - *Given* Key Track on and a detected root of F, *when* MIDI note G is played, *then* pitch-following layers sound 2 semitones up without added delay, and the Transient layer is unchanged.
 - *Given* any state, *when* the project is saved and reopened, *then* a render is bit-identical to the one before saving.
 - *Given* layer 1 routed to A1 and layer 2 routed to MAIN, *when* Aux 1 is muted, *then* layer 1 is silent and layer 2 is unchanged.
@@ -612,14 +612,14 @@ The MVP is a playable 6-layer stack with role-based randomization, four FX modul
 | Milestone | Scope | Exit criterion |
 | --- | --- | --- |
 | M0 Skeleton | Project setup, CMake, Windows VST3 target, CI, pluginval in CI | Empty plugin loads in Ableton Live, Reaper and FL Studio |
-| M1 Layer engine | 6 layers, load WAV, offset, start trim, fader, volume envelope (render side), length change via Signalsmith Stretch, Repitch, offline render cache, MIDI trigger (monophonic, 5 ms cut), host tempo, key detection, real-time Key Track | Hand-built kick plays in key; listening test LT-1 passed |
-| M2 Library + randomizer | Sample index, role pools, roll template, Randomize All / per layer, lock/mute/solo, undo/redo | UC-1 and UC-2 pass |
+| M1 Layer engine | 6 layers, load WAV, offset, start trim, fader, volume envelope (render side), length change via Signalsmith Stretch, Tape mode (repitch), offline render cache, MIDI trigger (monophonic, 5 ms cut), host tempo, key detection, real-time Key Track | Hand-built kick plays in key; listening test LT-1 passed |
+| M2 Library + randomizer | Sample index, role pools, roll template, Forge / Reforge per layer, lock/mute/solo, undo/redo | UC-1 and UC-2 pass |
 | M3 Visualiser UI | Kick page with library sidebar, Layer/Sum visualiser with envelope editor, audition button, layer naming, Settings menu, layer cards | UI-001–UI-007 and UI-017 pass |
-| M4 FX rack v1 | Main + 2 Aux chains, per-layer routing, drag & drop chain building, expandable module views; Distortion, EQ, Filters, Finalizer; save/lock per chain; global oversampling, path delay compensation, matched EQ/filters, Mono dial, master fader cap, TP switch (FR-212–218); module specs in 7.5.1–7.5.5 | UC-4 passes |
-| M5 Presets + export | Kick presets (floppy save / save as), Drag Master (all FX chains) with save dialog | UC-6 and UC-7 pass → **MVP** |
+| M4 FX rack v1 | Main + 2 Aux chains, per-layer routing, drag & drop chain building, expandable module views; Distortion, EQ, Filters, Temper; save/lock per chain; global oversampling, path delay compensation, matched EQ/filters, Mono dial, master fader cap, TP switch (FR-212–218); module specs in 7.5.1–7.5.5 | UC-4 passes |
+| M5 Presets + export | Kick presets (floppy save / save as), Export all (all FX chains) with save dialog | UC-6 and UC-7 pass → **MVP** |
 | M6 Extended | 12 layers, user libraries, remaining 4 FX modules | Version 1 feature-complete |
 | M7 Release | Windows installer, factory content integrated, release QA | Version 1 release candidate |
-| V2 Synthesis tail + Drag Stems | Synthesis engine for the main kick tail, used as a layer type next to samples; key-tracked, rendered by the stack renderer; Drag Stems export (one WAV per part); spectral sidechain option; Finalizer mono-below for per-layer export; render in place on the layer card (FR-117); velocity-driven layer morphing (idea) | A synthesized tail can replace or blend with a sample tail |
+| V2 Synthesis tail + Export layer | Synthesis engine for the main kick tail, used as a layer type next to samples; key-tracked, rendered by the stack renderer; Export layer (one WAV per layer); spectral sidechain option; Temper mono-below for per-layer export; render in place on the layer card (FR-117); velocity-driven layer morphing (idea) | A synthesized tail can replace or blend with a sample tail |
 
 ## 14. Open questions & decision log
 
@@ -682,6 +682,7 @@ These need answers before or during the first coding session.
 | 2026-10-19 | Layer mode default Stretch; in Repitch mode the Pitch knob is greyed out and the Stretch knob sets the varispeed (FR-106, UI-007). The kick-page wireframe has no mode switch yet: update it before M3 UI work. Signalsmith pitch-shift accuracy (up to \~8 cents on a sine) accepted, judged in LT-2. Stretched parts are level-compensated to the input RMS | Product owner decisions from the M1 review; FR-106 did not say what the knobs do in Repitch mode, and Signalsmith loses up to \~3.5 dB at long stretches |
 | 2026-10-19 | Visual design: Forge theme (gunmetal + bronze, ember as the only active and glowing colour, standard bloom, temper-scale meters), white layer names; Kick page mock is the design reference (UI-020 to UI-029). Library preview on single click, switchable in Settings. Collapsed library becomes a rail; a role button expands it at that role. Stretch / Repitch switch sits below the Pitch knob. Layer-card knob design to be revisited in M3; document version 0.5 | Product owner decisions from the UI design review |
 | 2026-10-19 | One layer knob with a three-way mode switch (Stretch: length only · Pitch: pitch only · Repitch: tape-style, both together), default Stretch; replaces the separate Pitch and Stretch knobs (FR-104–106, UI-007, UI-019). Implemented in the second pass of M1, since M1 is running on v0.4. Render in place on the card planned for version 2 (FR-117); document version 0.6 | Product owner decision; the v0.5 mock showed two knobs plus a switch were redundant, and one transform per layer keeps the card simple |
+| 2026-10-19 | UI wording changed to stay clear of the reference product's feature names: Drag Master → Export all; Drag Stems → Export layer; Randomize All → Forge; per-layer roll → Reforge; layer modes Stretch / Pitch / Repitch → Length / Pitch / Tape; Finalizer → Temper; Equalizer → EQ; Multiband → Split Dynamics; Convolver → Space; “restore or reset on launch” → “on open: last session or empty kick”; OUT → MASTER; window sizes XS–XL → 75–200 %; chain lock is icon-only; “part” → “layer”/“sample” in the UI. Kept: Key Track, pitch-follow (P), Clip, Crunch. Earlier rows keep the old names; document version 0.7 | Product owner decisions from the wording review against the reference product; lowers trademark and look-alike risk (section 11) |
 
 ### Sources
 
@@ -696,4 +697,4 @@ Items the user manual must explain; collected here so nothing is lost before the
 - Mono dial: 0 means no processing; the filter slope is set in Settings.
 - A newly added Distortion loads with Mix at 0 %, so it changes nothing until Mix is turned up.
 - TP switch: holds the output at or below 0 dBTP and switches the output meter to dBTP; the master fader goes up to 0 dB only.
-- With Live oversampling Off, TP catches only sample peaks during playback, not peaks between samples; Drag Master and host renders are always oversampled.
+- With Live oversampling Off, TP catches only sample peaks during playback, not peaks between samples; Export all and host renders are always oversampled.
