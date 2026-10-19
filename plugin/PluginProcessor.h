@@ -36,7 +36,8 @@ public:
     int getNumPrograms() override { return 1; }
     int getCurrentProgram() override { return 0; }
     void setCurrentProgram(int) override {}
-    const juce::String getProgramName(int) override { return {}; }
+    // The VST3 validator requires a non-empty name for every program (NFR-011).
+    const juce::String getProgramName(int) override { return "Default"; }
     void changeProgramName(int, const juce::String&) override {}
 
     // FR-003 stub: the state is the versioned JSON from core/model.

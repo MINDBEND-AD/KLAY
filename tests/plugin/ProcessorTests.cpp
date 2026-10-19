@@ -39,6 +39,8 @@ TEST_CASE("Processor reports the plugin identity", "[plugin]")
     CHECK_FALSE(processor.producesMidi());
     CHECK(processor.getTotalNumInputChannels() == 0);
     CHECK(processor.getTotalNumOutputChannels() == 2);
+    REQUIRE(processor.getNumPrograms() == 1);
+    CHECK(processor.getProgramName(0).isNotEmpty()); // VST3 validator "Scan Programs" (NFR-011)
 }
 
 TEST_CASE("Processor only accepts a stereo output without inputs", "[plugin]")

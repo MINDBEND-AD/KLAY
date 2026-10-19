@@ -94,7 +94,7 @@ interfaces implemented in `adapters/`) · `plugin/` · `ui/` · `tools/render-cl
 | 0.4 ✓ | Test harness: Catch2 under ctest; JUCE-free core test plus a processor smoke test | §12 | `ctest` passes |
 | 0.5 ✓ | RT harness (Q1): allocation/lock hooks, audio-thread flag, `RT_GUARD` macro | NFR-001, FR-234 | UT: a deliberate allocation inside a guard is caught; the empty `processBlock` passes |
 | 0.6 ✓ | License check `tools/check-licenses.ps1`: GPL-family SPDX without the `LICENSE-GPL` marker, or missing from THIRD_PARTY_LICENSES.md, fails; runs as a ctest | C-006 | UT: an unmarked fixture file fails, the real tree passes |
-| 0.7 | `tools/validate.ps1`: pluginval (pinned) strictness 8 + VST3 validator on the built plugin | NFR-011 | PV passes, output shown |
+| 0.7 ✓ | `tools/validate.ps1`: pluginval (pinned) strictness 8 + VST3 validator on the built plugin | NFR-011 | PV passes, output shown |
 | 0.8 | Public GitHub repo (PO go-ahead before creating it; prerequisites in decision 3) + GitHub Actions workflow (windows, MSVC): configure, build, ctest, license check, PV | §10 | Green CI run shown |
 | 0.9 | `docs/checks/M0.md`: load, play and close in Ableton Live, Reaper, FL Studio | FR-007 (partial) | PO |
 
@@ -116,6 +116,10 @@ Reaper and FL Studio. Tag `m0-done`.
   `HeapBlock`, `AudioBuffer`), `std::mutex` and `juce::CriticalSection` inside `RT_GUARD` are caught too. Zero-timeout
   waits and try-locks are allowed. Plain `malloc` in the shipped plugin is unaffected; the hooks exist in test
   executables only. `RT_GUARD` stays in `processBlock` of the shipped plugin (one thread-local increment).
+- 0.7: the VST3 validator is built from the pinned SDK by a separate CMake project (`tools/vst3-validator`, into
+  `build/vst3-validator`); pluginval is downloaded per run-machine to `tools/bin/` and SHA-256 checked (GitHub
+  publishes no digest for v1.0.4, so the hash is pinned on first download). The validator found the unnamed default
+  program; it is now called "Default".
 
 ## M1 Layer engine
 

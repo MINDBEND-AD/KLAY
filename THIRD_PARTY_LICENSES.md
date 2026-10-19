@@ -18,7 +18,7 @@ Rows are machine-read: keep one component per row, globs in backticks, separated
 | --- | --- | --- | --- | --- |
 | JUCE | AGPL-3.0-only (or JUCE commercial licence) | 8.0.16-security | `build/_deps/juce-src/**` (fetched, not in the repo) | Buy a JUCE commercial licence; no code change needed |
 | KLAY own source | AGPL-3.0-only | — | `core/**`, `adapters/**`, `plugin/**`, `ui/**`, `tools/**`, `tests/**`, `cmake/**`, `CMakeLists.txt` | Owner relicenses own code; JUCE-dependent layers (`plugin/`, `ui/`, `adapters/`) need a JUCE commercial licence (C-007) |
-| vst3sdk | MIT (VST3 SDK, since 3.8) | v3.8.0_build_66 | `build/_deps/vst3sdk-src/**` (fetched; validator only, not linked into the plugin) | Not GPL; keep |
+| vst3sdk | MIT (VST3 SDK, since 3.8) | v3.8.0_build_66 | `build/vst3-validator/_deps/vst3sdk-src/**` (fetched by `tools/vst3-validator`; validator only, not linked into the plugin) | Not GPL; keep |
 | signalsmith-stretch | MIT | 1.4.0 | fetched from M1 on | Not GPL; keep (attribution notice required) |
 | Catch2 | BSL-1.0 | v3.16.1 | `build/_deps/catch2-src/**` (fetched; tests only) | Not GPL; keep |
 | pluginval | GPL-3.0 | v1.0.4 | `tools/bin/pluginval/**` (downloaded binary, tooling only, never shipped or linked) | Tooling only; nothing to replace |
