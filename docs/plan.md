@@ -262,9 +262,9 @@ The spec contradictions C1–C6 (below) were resolved by the PO the same day: pr
 | 1.19 ✓ | JSON migration v1 → v2 (Q-B): old `stretch` / `pitch` / `mode` fields map to the new per-mode values and active mode; unknown fields still ignored | NFR-012, FR-003 | UT: v1 fixtures (Stretch with length only, pitch only, both; Repitch) load to the agreed v2 kick; a v2 file round-trips |
 | 1.20 ✓ | Renderer: `processPart` applies only the active mode — Length: Signalsmith length change; Pitch: exact-pitch shift at 1× (time-stretch + Repitch, as the cache); Tape: Lagrange varispeed at the tape speed (Q-A). Processed-part cache key and key detection follow the active mode | FR-104–106, FR-107, FR-120 | UT per mode: length exact, pitch of a sine ±2 ct, Tape speed → length and pitch together; inactive values have no effect; render bit-identical across runs |
 | 1.21 ✓ | Fixtures and goldens: the three fixture kicks move to schema 2 (`stack.json` used Stretch + Pitch on one layer, so it changes), goldens regenerated on purpose and committed with the reason; render-cli `listening` file names use "tape" for the varispeed references | §12, NFR-009 | GT: 3 kicks null at −120 dBFS against the new goldens; the two must-fail checks still fail; a v1 kick JSON renders through the migration |
-| 1.22 | Dev editor: one knob per layer with a Length · Pitch · Tape switch below it; label, range and readout follow the mode (Length 0.25–8×, Pitch ±12 st ±100 ct, Speed 0.25–8× with the resulting pitch); log travel in Length and Tape; "sample" instead of "part" in its text (v0.7 wording) | FR-106, UI-007, UI-019 (dev editor only) | UT: editor opens with each mode; PO: switch modes on a layer, each keeps its value and only the active one is heard |
+| 1.22 ✓ | Dev editor: one knob per layer with a Length · Pitch · Tape switch below it; label, range and readout follow the mode (Length 0.25–8×, Pitch ±12 st ±100 ct, Speed 0.25–8× with the resulting pitch); log travel in Length and Tape; "sample" instead of "part" in its text (v0.7 wording) | FR-106, UI-007, UI-019 (dev editor only) | UT: editor opens with each mode; PO: switch modes on a layer, each keeps its value and only the active one is heard |
 | 1.23 ✓ | Plan wording to v0.9 for the later milestones: Forge / Reforge (2.3, 2.7), Export all (M5), Temper / EQ (M4), task 3.4 uses the one layer knob, window sizes 75–200 % (3.1); no code | — | Review |
-| 1.24 | Full re-run: build, `ctest`, `validate.ps1` (pluginval strictness 8 + VST3 validator), CI green; PO re-checks 1.22 and steps 1.2–1.5 of `docs/checks/M1.md` in one DAW | NFR-011 | Shown passing; PO |
+| 1.24 ✓ | Full re-run: build, `ctest`, `validate.ps1` (pluginval strictness 8 + VST3 validator), CI green; PO re-checks 1.22 and steps 1.2–1.5 of `docs/checks/M1.md` in one DAW | NFR-011 | Shown passing; PO |
 
 **Second-pass notes (Claude Code, 2026-10-19)**
 - 1.18–1.20 landed in one commit: changing `LayerMode` to length / pitch / tape forces the renderer change (1.20),
@@ -287,8 +287,7 @@ The spec contradictions C1–C6 (below) were resolved by the PO the same day: pr
 - 1.24 (local part done 2026-10-19, dev machine, Release): build OK, `ctest` 107/107 passed, `tools/validate.ps1`
   pluginval strictness 8 PASSED, VST3 validator 47 passed / 0 failed. CI green on the push: run 39316422759
   (https://github.com/MINDBEND-AD/KLAY/actions/runs/39316422759), no Node.js 20 annotation; on the runner AC-2 root ±2
-  with 3 follow buses took 101.5 ms and was reported, not failed. Open: the PO re-check (section "Second-pass
-  re-check" in `docs/checks/M1.md`), which also closes 1.22.
+  with 3 follow buses took 101.5 ms and was reported, not failed. The PO reported the second-pass re-check as passed (2026-10-19); 1.22 and 1.24 ticked.
 
 **Questions, answered by the PO on 2026-10-19 (all proposals accepted)**
 - **Q-A Tape value:** UI-007 labels the Tape knob "Speed 0.25–8×", FR-106 says "0.25–8×". Decision: the stored value is
