@@ -238,6 +238,10 @@ LT-2 and AC-5 results. Tag `m1-done`.
 - 1.16: AC-1–AC-4 in `tests/plugin/AssumptionChecks.cpp` ([bm], runs in ctest); results and verdicts in
   `docs/checks/M1.md`, all within target. Cache buses of a note are shifted in parallel; exact-pitch shifting is
   limited to a 0.25–4× internal stretch (≈ ±24 st), farther notes use Signalsmith's own shift.
+- 1.17: `klay_render_cli listening --samples <dir> --out <dir>` writes LT-1 (5 ratios × 2 presets + original and
+  Repitch references, blind default-vs-cheaper pairs), LT-2 (−24…+24 st via the cache method) and AC-5 (cached vs
+  fallback, blind) material, level-matched, fixed-seed blind order; a ctest runs it on the synthetic parts. Not
+  ticked: needs the PO's parts and listening (steps in `docs/checks/M1.md`).
 - Session stop (2026-10-19): 1.12 (cache part), 1.14–1.17 are open; status, open PO decisions and the verified
   build/ctest/pluginval results are in `docs/checks/M1.md`. 1.12 is not ticked: the real-time Repitch fallback and
   Key Track are done and tested, the background transposition cache is not.

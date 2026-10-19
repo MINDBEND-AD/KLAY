@@ -132,3 +132,11 @@ add_test(NAME "golden: a different length fails the null test"
             --out ${CMAKE_CURRENT_BINARY_DIR}/golden-length.wav --sr 48000
             --compare ${CMAKE_CURRENT_SOURCE_DIR}/fixtures/kicks/golden/punch.wav)
 set_tests_properties("golden: a different length fails the null test" PROPERTIES WILL_FAIL TRUE)
+
+# Task 1.17: the listening-material generator runs end to end on the synthetic fixture parts.
+add_test(NAME "listening material generator runs on the fixture parts"
+    COMMAND klay_render_cli listening --samples ${CMAKE_CURRENT_SOURCE_DIR}/fixtures/kicks/samples
+            --out ${CMAKE_CURRENT_BINARY_DIR}/listening-smoke)
+set_tests_properties("listening material generator runs on the fixture parts" PROPERTIES
+    PASS_REGULAR_EXPRESSION "listening material: 4 parts, 136 files"
+    FAIL_REGULAR_EXPRESSION "cannot write")
