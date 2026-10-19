@@ -6,7 +6,8 @@
 // RT_GUARD marks the enclosing scope as audio-thread code by raising a thread-local depth counter. In the shipped
 // plugin nothing else happens. Test builds link tests/rt/RtHarness.cpp, which replaces the global operator
 // new/delete and installs a violation handler, so any allocation, deallocation or klay::rt::Mutex lock inside a
-// guarded scope is counted and fails the test.
+// guarded scope is counted and fails the test. On Windows the harness also reports OS-level heap, lock, file I/O,
+// logging and sleep calls (see tests/rt/RtHarness.cpp).
 #pragma once
 
 #include <atomic>
@@ -18,7 +19,10 @@ enum class Violation
 {
     allocation,
     deallocation,
-    lock
+    lock,
+    io,      // file I/O (CreateFile, ReadFile, WriteFile)
+    logging, // OutputDebugString
+    sleep    // Sleep, SleepEx, SwitchToThread
 };
 
 using ViolationHandler = void (*)(Violation) noexcept;

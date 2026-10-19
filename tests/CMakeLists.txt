@@ -3,12 +3,16 @@
 include(Catch)
 
 # RT harness (NFR-001, plan decision 1): replaces the global operator new/delete in every test executable and counts
-# allocations, deallocations and klay::rt::Mutex locks inside RT_GUARD scopes. JUCE-free.
+# allocations, deallocations and klay::rt::Mutex locks inside RT_GUARD scopes; on Windows it also hooks OS heap, lock,
+# file I/O, logging and sleep calls. JUCE-free.
 add_library(klay_rt_harness OBJECT
     rt/RtHarness.cpp
     rt/RtHarness.h)
 target_include_directories(klay_rt_harness PUBLIC ${PROJECT_SOURCE_DIR})
 target_compile_features(klay_rt_harness PUBLIC cxx_std_20)
+if(WIN32)
+    target_link_libraries(klay_rt_harness PUBLIC Synchronization) # WaitOnAddress
+endif()
 
 # JUCE-free core tests (C-007): links only klay_core, the RT harness and Catch2, so the core is proven to build and
 # run without JUCE.

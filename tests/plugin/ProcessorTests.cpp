@@ -179,7 +179,7 @@ TEST_CASE("Processor processBlock is real-time safe", "[plugin][rt][NFR-001]")
     }
 
     const auto counts = recorder.counts();
-    CAPTURE(counts.allocations, counts.deallocations, counts.locks);
+    CAPTURE(counts.allocations, counts.deallocations, counts.locks, counts.io, counts.logging, counts.sleeps);
     CHECK(counts.total() == 0);
 }
 

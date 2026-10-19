@@ -116,6 +116,15 @@ Reaper and FL Studio. Tag `m0-done`.
   `HeapBlock`, `AudioBuffer`), `std::mutex` and `juce::CriticalSection` inside `RT_GUARD` are caught too. Zero-timeout
   waits and try-locks are allowed. Plain `malloc` in the shipped plugin is unaffected; the hooks exist in test
   executables only. `RT_GUARD` stays in `processBlock` of the shipped plugin (one thread-local increment).
+  After the M0 review the import-table hooks also cover the other allocators (VirtualAlloc/Free, LocalAlloc/ReAlloc/
+  Free, GlobalAlloc/ReAlloc/Free), WaitOnAddress (`std::atomic::wait`; zero timeout allowed), file I/O
+  (CreateFileA/W, ReadFile, WriteFile, reported as `io`), logging (OutputDebugStringA/W, `logging`) and sleeping or
+  yielding (Sleep, SleepEx, SwitchToThread, `sleep`, including `Sleep(0)`), each with a self-test. The processor RT
+  test wraps `processBlock` and `processBlockBypassed` in its own `RT_GUARD`; the double-precision overload is not
+  supported (asserted). Remaining blind spots: calls resolved through `GetProcAddress` or delay-load, calls made from
+  inside other DLLs (only the test executable's import table is patched, so e.g. work inside a system DLL that
+  allocates internally is not seen), and OS calls not on the hook list (e.g. `CreateFile2`, `NtWaitForSingleObject`,
+  console APIs, registry access). Code review and the §12 listening/DAW tests stay the backstop for those.
 - 0.7: the VST3 validator is built from the pinned SDK by a separate CMake project (`tools/vst3-validator`, into
   `build/vst3-validator`); pluginval is downloaded per run-machine to `tools/bin/` and SHA-256 checked (GitHub
   publishes no digest for v1.0.4, so the hash is pinned on first download). The validator found the unnamed default

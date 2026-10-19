@@ -17,8 +17,11 @@ struct Counts
     std::uint64_t allocations = 0;
     std::uint64_t deallocations = 0;
     std::uint64_t locks = 0;
+    std::uint64_t io = 0;
+    std::uint64_t logging = 0;
+    std::uint64_t sleeps = 0;
 
-    std::uint64_t total() const noexcept { return allocations + deallocations + locks; }
+    std::uint64_t total() const noexcept { return allocations + deallocations + locks + io + logging + sleeps; }
 };
 
 // Records violations from construction on, starting at zero; stops recording on destruction.
@@ -34,7 +37,7 @@ public:
     ScopedViolationRecorder& operator=(const ScopedViolationRecorder&) = delete;
 };
 
-// True when the OS-level heap and lock hooks are active (Windows test executables).
+// True when the OS-level heap, lock, I/O, logging and sleep hooks are active (Windows test executables).
 bool osHooksInstalled() noexcept;
 
 } // namespace klay::rt::test

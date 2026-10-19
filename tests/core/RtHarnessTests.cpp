@@ -13,8 +13,19 @@
 #include <cstdlib>
 #include <memory>
 #include <mutex>
+#include <string_view>
 #include <thread>
 #include <vector>
+
+#ifdef _WIN32
+    #ifndef NOMINMAX
+        #define NOMINMAX
+    #endif
+    #ifndef WIN32_LEAN_AND_MEAN
+        #define WIN32_LEAN_AND_MEAN
+    #endif
+    #include <windows.h>
+#endif
 
 using klay::rt::test::ScopedViolationRecorder;
 
@@ -171,3 +182,97 @@ TEST_CASE("RT harness: lock-free atomics inside RT_GUARD are not reported", "[rt
     CHECK(value.load() == 1000);
     CHECK(recorder.counts().total() == 0);
 }
+
+#ifdef _WIN32
+
+// One self-test per OS hook kind beyond the heap and lock ones above (NFR-001, FR-234). Each calls the Win32 API
+// directly, so the test executable imports it and the import-table hook is exercised.
+
+TEST_CASE("RT harness: VirtualAlloc, LocalAlloc and GlobalAlloc inside RT_GUARD are caught", "[rt][NFR-001]")
+{
+    ScopedViolationRecorder recorder;
+    {
+        RT_GUARD;
+        void* virtualMem = ::VirtualAlloc(nullptr, 4096, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+        ::VirtualFree(virtualMem, 0, MEM_RELEASE);
+        HLOCAL localMem = ::LocalAlloc(LMEM_FIXED, allocationSize);
+        ::LocalFree(localMem);
+        HGLOBAL globalMem = ::GlobalAlloc(GMEM_FIXED, allocationSize);
+        ::GlobalFree(globalMem);
+    }
+    CHECK(recorder.counts().allocations == 3);
+    CHECK(recorder.counts().deallocations == 3);
+}
+
+TEST_CASE("RT harness: file I/O inside RT_GUARD is caught", "[rt][NFR-001]")
+{
+    wchar_t dirW[MAX_PATH] = {};
+    REQUIRE(::GetTempPathW(MAX_PATH, dirW) > 0);
+    wchar_t pathW[MAX_PATH] = {};
+    REQUIRE(::GetTempFileNameW(dirW, L"klr", 0, pathW) != 0);
+    char pathA[MAX_PATH] = {};
+    REQUIRE(::WideCharToMultiByte(CP_ACP, 0, pathW, -1, pathA, MAX_PATH, nullptr, nullptr) > 0);
+
+    const char data[] = "klay";
+    char readBack[sizeof(data)] = {};
+    DWORD done = 0;
+
+    ScopedViolationRecorder recorder;
+    {
+        RT_GUARD;
+        HANDLE out = ::CreateFileW(pathW, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+        ::WriteFile(out, data, sizeof(data), &done, nullptr);
+        ::CloseHandle(out);
+        HANDLE in = ::CreateFileA(pathA, GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+        ::ReadFile(in, readBack, sizeof(readBack), &done, nullptr);
+        ::CloseHandle(in);
+    }
+    const auto counts = recorder.counts();
+    ::DeleteFileW(pathW);
+
+    CHECK(counts.io == 4);
+    CHECK(std::string_view(readBack) == "klay");
+}
+
+TEST_CASE("RT harness: OutputDebugString inside RT_GUARD is caught", "[rt][NFR-001]")
+{
+    ScopedViolationRecorder recorder;
+    {
+        RT_GUARD;
+        ::OutputDebugStringA("KLAY RT harness self-test\n");
+        ::OutputDebugStringW(L"KLAY RT harness self-test\n");
+    }
+    CHECK(recorder.counts().logging == 2);
+}
+
+TEST_CASE("RT harness: Sleep, SleepEx and SwitchToThread inside RT_GUARD are caught", "[rt][NFR-001]")
+{
+    ScopedViolationRecorder recorder;
+    {
+        RT_GUARD;
+        ::Sleep(0);
+        ::SleepEx(0, FALSE);
+        ::SwitchToThread();
+    }
+    CHECK(recorder.counts().sleeps == 3);
+}
+
+TEST_CASE("RT harness: a blocking WaitOnAddress inside RT_GUARD is caught, a zero-timeout poll is not",
+          "[rt][NFR-001]")
+{
+    volatile long value = 0;
+    long differs = 1; // the value differs, so the wait returns at once
+    ScopedViolationRecorder recorder;
+    {
+        RT_GUARD;
+        ::WaitOnAddress(&value, &differs, sizeof(value), 0);
+    }
+    CHECK(recorder.counts().locks == 0);
+    {
+        RT_GUARD;
+        ::WaitOnAddress(&value, &differs, sizeof(value), 10);
+    }
+    CHECK(recorder.counts().locks == 1);
+}
+
+#endif // _WIN32
