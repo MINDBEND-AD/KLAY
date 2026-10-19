@@ -167,7 +167,7 @@ Reaper and FL Studio. Tag `m0-done`.
 | 1.13 ✓ | Processor state: full stack + settings + sample paths; missing samples reported, not crashing | FR-003 (stack part) | UT: Gherkin "save + reopen → bit-identical render" |
 | 1.14 ✓ | `tools/render-cli`: kick JSON → WAV; golden-file null test (−120 dBFS) | §12 | GT: 3 fixture kicks |
 | 1.15 | Dev editor (Q14): load kick JSON, per-layer basic controls, audition | — (temporary) | PO uses it in 1.17 |
-| 1.16 | Assumption-check harness: AC-1 cache RAM, AC-2 build time, AC-3 playback CPU, AC-4 latency; results in `docs/checks/M1.md` | AC-1–AC-4, NFR-002, NFR-014, NFR-015 | BM results recorded against targets |
+| 1.16 ✓ | Assumption-check harness: AC-1 cache RAM, AC-2 build time, AC-3 playback CPU, AC-4 latency; results in `docs/checks/M1.md` | AC-1–AC-4, NFR-002, NFR-014, NFR-015 | BM results recorded against targets |
 | 1.17 | Listening material via render-cli: LT-1 sets (5 ratios × 2 presets + references), AC-5 A/B pairs, LT-2 transpositions; check steps in `docs/checks/M1.md` | LT-1, LT-2, AC-5 | PO; results and chosen stretch preset go to the decision log |
 
 **Exit M1:** all UT/GT/RT pass and are shown; AC-1–AC-4 results are recorded and within targets (or a deviation is
@@ -235,6 +235,9 @@ LT-2 and AC-5 results. Tag `m1-done`.
 - 1.15: dev editor built (plugin/PluginEditor, `KickFiles.h` for JSON load/save with relative part paths). Not ticked:
   its verification is the PO using it for the 1.17 checks (`docs/checks/M1.md`). Rows are built for the layer count at
   open (6 by default); a kick with more layers needs the editor reopened.
+- 1.16: AC-1–AC-4 in `tests/plugin/AssumptionChecks.cpp` ([bm], runs in ctest); results and verdicts in
+  `docs/checks/M1.md`, all within target. Cache buses of a note are shifted in parallel; exact-pitch shifting is
+  limited to a 0.25–4× internal stretch (≈ ±24 st), farther notes use Signalsmith's own shift.
 - Session stop (2026-10-19): 1.12 (cache part), 1.14–1.17 are open; status, open PO decisions and the verified
   build/ctest/pluginval results are in `docs/checks/M1.md`. 1.12 is not ticked: the real-time Repitch fallback and
   Key Track are done and tested, the background transposition cache is not.

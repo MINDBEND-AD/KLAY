@@ -4,6 +4,7 @@
 #include "core/render/Stretcher.h"
 
 #include <algorithm>
+#include <future>
 #include <thread>
 
 namespace klay::render
@@ -162,13 +163,22 @@ bool KickEngine::build(const RenderedKick& kick, int note, bool mayEvict)
         unpublish(victim);
     }
 
+    if (renderPending())
+        return false; // a newer edit is waiting: this render's cache is obsolete
+
+    // The buses of one note are independent: shift them in parallel (AC-2: root ±2 with 3 follow buses took 130 ms
+    // one after another, target 100 ms). Results do not depend on scheduling (NFR-009).
+    std::array<std::future<StereoBuffer>, kNumBuses> jobs;
     for (size_t b = 0; b < kNumBuses; ++b)
-    {
-        if (renderPending())
-            return false; // a newer edit is waiting: this render's cache is obsolete
         if (! isSilent(kick.buses[b].follow))
-            entry->follow[b] = stretch(kick.buses[b].follow, kick.sampleRate, 1.0, entry->semitones, cacheConfig.preset, config.resamplers);
-    }
+            jobs[b] = std::async(std::launch::async, [this, &kick, b, semitones = entry->semitones] {
+                return stretch(kick.buses[b].follow, kick.sampleRate, 1.0, semitones, cacheConfig.preset, config.resamplers);
+            });
+    for (size_t b = 0; b < kNumBuses; ++b)
+        if (jobs[b].valid())
+            entry->follow[b] = jobs[b].get();
+    if (renderPending())
+        return false;
 
     bytes.fetch_add(entryBytes(*entry), std::memory_order_acq_rel);
     count.fetch_add(1, std::memory_order_acq_rel);

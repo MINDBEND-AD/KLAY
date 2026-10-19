@@ -76,12 +76,13 @@ StereoBuffer stretch(const StereoBuffer& input, double sampleRate, double length
         return StereoBuffer(outLength);
 
     StereoBuffer result;
-    if (semitones != 0.0 && resamplers)
+    const double ratio = semitonesToRatio(semitones);
+    if (semitones != 0.0 && resamplers && lengthFactor * ratio >= 0.25 && lengthFactor * ratio <= 4.0)
     {
         // Exact pitch: Signalsmith's own pitch shift is off by up to ~45 cents at kick fundamentals (≈ 45 Hz), its
         // time-stretch is not. So stretch by the pitch ratio (pitch kept), then Repitch by the same ratio back to
-        // the target length (M1 review, see docs/plan.md).
-        const double ratio = semitonesToRatio(semitones);
+        // the target length (M1 review, see docs/plan.md). Only within a 0.25–4× internal stretch (about ±24 st at
+        // 1×): far transpositions use Signalsmith's own shift, which costs ~10× less there (AC-2).
         result = repitch(signalsmithStretch(input, sampleRate, lengthFactor * ratio, 0.0, preset), semitones, resamplers);
         result.resize(outLength);
     }

@@ -32,6 +32,7 @@ target_link_libraries(klay_core_tests PRIVATE klay_core klay_rt_harness Catch2::
 # Its include paths and JucePlugin_* definitions are borrowed instead of linking the JUCE modules a second time.
 add_executable(klay_tests
     plugin/AdapterTests.cpp
+    plugin/AssumptionChecks.cpp
     plugin/EditorTests.cpp
     plugin/PlaybackTests.cpp
     plugin/ProcessorTests.cpp)
