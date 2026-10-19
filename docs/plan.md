@@ -285,8 +285,10 @@ The spec contradictions C1–C6 (below) were resolved by the PO the same day: pr
 - 1.23: M2–M5 rows use the v0.10 wording (Forge / Reforge, Export all, EQ, Temper, MASTER, 75–200 %, one layer knob
   in 3.4). The dated decisions at the top of this plan keep their original names, as the spec's decision log does.
 - 1.24 (local part done 2026-10-19, dev machine, Release): build OK, `ctest` 107/107 passed, `tools/validate.ps1`
-  pluginval strictness 8 PASSED, VST3 validator 47 passed / 0 failed. Open: a green CI run after the push, and the PO
-  re-check (section "Second-pass re-check" in `docs/checks/M1.md`), which also closes 1.22.
+  pluginval strictness 8 PASSED, VST3 validator 47 passed / 0 failed. CI green on the push: run 39316422759
+  (https://github.com/MINDBEND-AD/KLAY/actions/runs/39316422759), no Node.js 20 annotation; on the runner AC-2 root ±2
+  with 3 follow buses took 101.5 ms and was reported, not failed. Open: the PO re-check (section "Second-pass
+  re-check" in `docs/checks/M1.md`), which also closes 1.22.
 
 **Questions, answered by the PO on 2026-10-19 (all proposals accepted)**
 - **Q-A Tape value:** UI-007 labels the Tape knob "Speed 0.25–8×", FR-106 says "0.25–8×". Decision: the stored value is
