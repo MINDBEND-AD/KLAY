@@ -7,10 +7,14 @@ add_library(klay_core STATIC
     model/Kick.h
     model/KickJson.cpp
     model/KickJson.h
+    library/KeyDetector.cpp
+    library/KeyDetector.h
     dsp/Fft.cpp
     dsp/Fft.h
     render/Envelope.cpp
     render/Envelope.h
+    render/KickPlayer.cpp
+    render/KickPlayer.h
     render/RenderEngine.cpp
     render/RenderEngine.h
     render/Resampler.cpp
@@ -18,6 +22,7 @@ add_library(klay_core STATIC
     render/StackRenderer.cpp
     render/StackRenderer.h
     render/StereoBuffer.h
+    render/TempoDebouncer.h
     render/Stretcher.cpp
     render/Stretcher.h
     render/TimeBase.cpp

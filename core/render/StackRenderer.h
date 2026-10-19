@@ -63,6 +63,9 @@ class LayerCache
 public:
     std::shared_ptr<const StereoBuffer> find(const std::string& key);
     void store(const std::string& key, std::shared_ptr<const StereoBuffer> audio);
+    // Key detection results per processed part (FR-120), so edits that keep the key layer's part skip YIN.
+    std::optional<KeyInfo> findKey(const std::string& key);
+    void storeKey(const std::string& key, KeyInfo info);
     // Drops every entry not used since the last call.
     void trim();
     size_t size();
@@ -70,6 +73,7 @@ public:
 private:
     std::mutex mutex;
     std::map<std::string, std::pair<std::shared_ptr<const StereoBuffer>, bool>> entries; // audio, used since trim
+    std::map<std::string, std::pair<KeyInfo, bool>> keys;
 };
 
 struct RenderContext

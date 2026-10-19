@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // LICENSE-GPL: KLAY own source. See THIRD_PARTY_LICENSES.md (C-006).
 #include "core/render/StackRenderer.h"
+#include "core/library/KeyDetector.h"
 #include "core/render/Envelope.h"
 #include "core/render/Stretcher.h"
 #include "core/render/TimeBase.h"
@@ -29,9 +30,32 @@ void LayerCache::store(const std::string& key, std::shared_ptr<const StereoBuffe
     entries[key] = { std::move(audio), true };
 }
 
+std::optional<KeyInfo> LayerCache::findKey(const std::string& key)
+{
+    std::lock_guard lock(mutex);
+    const auto it = keys.find(key);
+    if (it == keys.end())
+        return std::nullopt;
+    it->second.second = true;
+    return it->second.first;
+}
+
+void LayerCache::storeKey(const std::string& key, KeyInfo info)
+{
+    std::lock_guard lock(mutex);
+    keys[key] = { std::move(info), true };
+}
+
 void LayerCache::trim()
 {
     std::lock_guard lock(mutex);
+    for (auto it = keys.begin(); it != keys.end();)
+    {
+        if (! it->second.second)
+            it = keys.erase(it);
+        else
+            (it++)->second.second = false;
+    }
     for (auto it = entries.begin(); it != entries.end();)
     {
         if (! it->second.second)
@@ -149,6 +173,26 @@ RenderedKick renderKick(const model::Kick& kick, const RenderContext& context)
     for (size_t i = 0; i < jobs.size(); ++i)
         if (jobs[i].valid())
             parts[i] = jobs[i].get();
+
+    // FR-120, FR-124: key of the key layer's processed part (before offset, envelope and fader), even when muted.
+    if (const auto k = static_cast<size_t>(kick.settings.keyLayer); k < kick.layers.size() && samples[k])
+    {
+        const auto cacheKey = partKey(kick.layers[k], context.sampleRate, kick.settings.stretchPreset);
+        if (auto known = context.layerCache ? context.layerCache->findKey(cacheKey) : std::nullopt)
+        {
+            result.key = *known;
+        }
+        else
+        {
+            const auto part = parts[k] ? parts[k] : processedPart(kick.layers[k], *samples[k], context, kick.settings.stretchPreset);
+            std::vector<float> mono(part->size());
+            for (size_t s = 0; s < mono.size(); ++s)
+                mono[s] = 0.5f * (part->left[s] + part->right[s]);
+            result.key = library::detectKey(mono.data(), mono.size(), context.sampleRate);
+            if (context.layerCache)
+                context.layerCache->storeKey(cacheKey, result.key);
+        }
+    }
 
     std::vector<float> envelope(result.length);
     for (size_t i = 0; i < kick.layers.size(); ++i)
