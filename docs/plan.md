@@ -141,9 +141,9 @@ Reaper and FL Studio. Tag `m0-done`.
   stamp `build/vst3-validator/klay-vst3sdk-tag.txt`, and prints the CMake output when that build fails.
 - 0.8: public repo https://github.com/MINDBEND-AD/KLAY (created 2026-10-19 with the PO's go-ahead; history was
   rewritten by the PO beforehand so every commit uses the GitHub noreply address). `.github/workflows/ci.yml` runs on
-  windows-latest and picks VS 2026 or 2022 (the runner had VS 18.10, so 2026). First run green:
-  https://github.com/MINDBEND-AD/KLAY/actions/runs/39215941341 (29/29 ctest, licence check, pluginval strictness 8
-  SUCCESS, VST3 validator 47/0).
+  windows-latest and picks VS 2026 or 2022 (the runner had VS 18.10, so 2026). First run green on 2026-10-19
+  (29/29 ctest, licence check, pluginval strictness 8 SUCCESS, VST3 validator 47/0). That run and the other runs made
+  before the history rewrite were deleted on 2026-10-19 (PO decision), since they pointed at pre-rewrite commits.
 - 0.9: done. The PO reported on 2026-10-19 that all steps in `docs/checks/M0.md` pass in Ableton Live, Reaper and
   FL Studio (host versions not recorded). M0 exit is met apart from the `m0-done` tag, which the PO sets after the
   milestone review.
