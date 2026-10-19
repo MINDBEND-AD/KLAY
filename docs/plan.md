@@ -278,6 +278,10 @@ The spec contradictions C1–C6 (below) were resolved by the PO the same day: pr
   render-cli `listening` names the varispeed references `ref_tape_<r>x`. Also repaired the Windows paths in
   `docs/checks/M1.md` (backslashes lost when the steps were written; the render-cli line had picked up a tab and a
   carriage return).
+- 1.22: dev editor row = one rotary knob (Length 0.25–8× and Tape speed 0.25–8× with log travel around 1×, Pitch in
+  cents −1300…+1300 split into st + ct), a Length · Pitch · Tape radio switch and a readout of what the active mode does;
+  "sample" instead of "part" in its text. UT drives the knob and switch; not ticked until the PO has run the re-check in
+  `docs/checks/M1.md` (section "Second-pass re-check").
 
 **Questions, answered by the PO on 2026-10-19 (all proposals accepted)**
 - **Q-A Tape value:** UI-007 labels the Tape knob "Speed 0.25–8×", FR-106 says "0.25–8×". Decision: the stored value is

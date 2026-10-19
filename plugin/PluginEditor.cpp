@@ -12,7 +12,7 @@ namespace klay
 namespace
 {
     constexpr int kTopHeight = 92;
-    constexpr int kRowHeight = 34;
+    constexpr int kRowHeight = 60;
     constexpr int kWidth = 1180;
 
     void setupSlider(juce::Slider& s, double lo, double hi, double step, const juce::String& suffix)
@@ -22,20 +22,76 @@ namespace
         s.setRange(lo, hi, step);
         s.setTextValueSuffix(suffix);
     }
+
+    // Pitch mode keeps semitones and cents (FR-104: ±12 st, ±100 ct); the one knob runs in cents.
+    int totalCents(const model::Layer& l)
+    {
+        return l.pitchSemitones * 100 + l.pitchCents;
+    }
+
+    void setTotalCents(model::Layer& l, int cents)
+    {
+        l.pitchSemitones = juce::jlimit(-12, 12, static_cast<int>(std::lround(cents / 100.0)));
+        l.pitchCents = juce::jlimit(-100, 100, cents - l.pitchSemitones * 100);
+    }
+
+    juce::String signedText(double v, int decimals, const juce::String& unit)
+    {
+        return (v > 0.0 ? "+" : "") + juce::String(v, decimals) + unit;
+    }
+
+    // UI-007 readout: what the active mode does to length and pitch.
+    juce::String readout(const model::Layer& l)
+    {
+        switch (l.mode)
+        {
+            case model::LayerMode::pitch:
+                return "Pitch " + signedText(l.pitchSemitones, 0, " st ") + signedText(l.pitchCents, 0, " ct") + "  |  length kept";
+            case model::LayerMode::tape:
+                return "Speed " + juce::String(l.tapeSpeed, 2) + "x  |  " + signedText(12.0 * std::log2(l.tapeSpeed), 1, " st")
+                       + ", length " + juce::String(1.0 / l.tapeSpeed, 2) + "x";
+            case model::LayerMode::length:
+                break;
+        }
+        return "Length " + juce::String(l.length, 2) + "x  |  pitch kept";
+    }
 } // namespace
 
-// One row of per-layer controls (FR-101–106, FR-110, FR-111, FR-122, routing).
+// One row of per-layer controls (FR-101–106, FR-110, FR-111, FR-122, routing). FR-106 / UI-007 (spec v0.10): one
+// layer knob with a Length · Pitch · Tape switch below it; its range, travel and readout follow the mode.
 struct KlayEditor::LayerRow
 {
-    juce::Label name, sample;
+    juce::Label name, sample, readout;
     juce::TextButton load{ "Load" };
-    juce::Slider fader, semitones, cents, stretch, offset;
-    juce::ComboBox mode, routing;
+    juce::Slider fader, knob, offset;
+    juce::TextButton modes[3]{ juce::TextButton("Length"), juce::TextButton("Pitch"), juce::TextButton("Tape") };
+    juce::ComboBox routing;
     juce::ToggleButton mute{ "M" }, solo{ "S" }, follow{ "P" };
+    int knobMode = -1;
 
     std::vector<juce::Component*> all()
     {
-        return { &name, &load, &sample, &fader, &semitones, &cents, &stretch, &mode, &offset, &mute, &solo, &follow, &routing };
+        return { &name, &load, &sample, &fader, &knob, &modes[0], &modes[1], &modes[2], &readout, &offset, &mute, &solo, &follow, &routing };
+    }
+
+    // Range, travel and default of the knob for a mode (UI-019: log travel in Length and Tape).
+    void configureKnob(model::LayerMode mode)
+    {
+        if (static_cast<int>(mode) == knobMode)
+            return; // a range change may send an async value change; only do it when the mode changes
+        knobMode = static_cast<int>(mode);
+        if (mode == model::LayerMode::pitch)
+        {
+            knob.setNormalisableRange({ -1300.0, 1300.0, 1.0 });
+            knob.setDoubleClickReturnValue(true, 0.0);
+        }
+        else
+        {
+            juce::NormalisableRange<double> range(0.25, 8.0, 0.001);
+            range.setSkewForCentre(1.0);
+            knob.setNormalisableRange(range);
+            knob.setDoubleClickReturnValue(true, 1.0);
+        }
     }
 };
 
@@ -65,12 +121,16 @@ KlayEditor::KlayEditor(KlayProcessor& p) : AudioProcessorEditor(p), processor(p)
         auto row = std::make_unique<LayerRow>();
         auto& r = *row;
         setupSlider(r.fader, -60.0, 0.0, 0.1, " dB");
-        setupSlider(r.semitones, -12.0, 12.0, 1.0, " st");
-        setupSlider(r.cents, -100.0, 100.0, 1.0, " ct");
-        setupSlider(r.stretch, 0.25, 8.0, 0.001, "x");
-        r.stretch.setSkewFactorFromMidPoint(1.0); // log-like travel around 1× (decision 8)
+        r.knob.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+        r.knob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+        r.knob.setComponentID("knob-" + juce::String((int) i));
+        for (int m = 0; m < 3; ++m)
+        {
+            r.modes[m].setRadioGroupId(1000 + static_cast<int>(i));
+            r.modes[m].setClickingTogglesState(true);
+            r.modes[m].setComponentID("mode-" + juce::String((int) i) + "-" + model::toString(static_cast<model::LayerMode>(m)));
+        }
         setupSlider(r.offset, 0.0, 200.0, 0.01, " ms");
-        r.mode.addItemList({ "Length", "Pitch", "Tape" }, 1);
         r.routing.addItemList({ "MAIN", "A1", "A2" }, 1);
         r.sample.setColour(juce::Label::textColourId, juce::Colours::white.withAlpha(0.7f));
 
@@ -82,13 +142,24 @@ KlayEditor::KlayEditor(KlayProcessor& p) : AudioProcessorEditor(p), processor(p)
             const float v = static_cast<float>(r.fader.getValue());
             layerEdit([v](model::Layer& l) { l.faderDb = v <= -60.0f ? model::kMinusInfinityDb : v; });
         };
-        r.semitones.onValueChange = [&r, layerEdit] { layerEdit([&r](model::Layer& l) { l.pitchSemitones = (int) r.semitones.getValue(); }); };
-        r.cents.onValueChange = [&r, layerEdit] { layerEdit([&r](model::Layer& l) { l.pitchCents = (int) r.cents.getValue(); }); };
-        r.stretch.onValueChange = [&r, layerEdit] { layerEdit([&r](model::Layer& l) { (l.mode == model::LayerMode::tape ? l.tapeSpeed : l.length) = r.stretch.getValue(); }); };
-        r.offset.onValueChange = [&r, layerEdit] { layerEdit([&r](model::Layer& l) { l.offsetMs = r.offset.getValue(); }); };
-        r.mode.onChange = [&r, layerEdit] {
-            layerEdit([&r](model::Layer& l) { l.mode = static_cast<model::LayerMode>(juce::jlimit(0, 2, r.mode.getSelectedItemIndex())); });
+        // The knob edits only the active mode's value; the other modes keep theirs (FR-106).
+        r.knob.onValueChange = [&r, layerEdit] {
+            const double v = r.knob.getValue();
+            layerEdit([v](model::Layer& l) {
+                switch (l.mode)
+                {
+                    case model::LayerMode::pitch: setTotalCents(l, static_cast<int>(std::lround(v))); break;
+                    case model::LayerMode::tape: l.tapeSpeed = v; break;
+                    case model::LayerMode::length: l.length = v; break;
+                }
+            });
         };
+        for (int m = 0; m < 3; ++m)
+            r.modes[m].onClick = [&r, layerEdit, m] {
+                if (r.modes[m].getToggleState())
+                    layerEdit([m](model::Layer& l) { l.mode = static_cast<model::LayerMode>(m); });
+            };
+        r.offset.onValueChange = [&r, layerEdit] { layerEdit([&r](model::Layer& l) { l.offsetMs = r.offset.getValue(); }); };
         r.routing.onChange = [&r, layerEdit] {
             layerEdit([&r](model::Layer& l) { l.routing = static_cast<model::Routing>(juce::jmax(0, r.routing.getSelectedItemIndex())); });
         };
@@ -96,7 +167,7 @@ KlayEditor::KlayEditor(KlayProcessor& p) : AudioProcessorEditor(p), processor(p)
         r.solo.onClick = [this, i] { edit([this, i](model::Kick& k) { model::clickSolo(k, i, juce::ModifierKeys::currentModifiers.isShiftDown()); }); };
         r.follow.onClick = [&r, layerEdit] { layerEdit([&r](model::Layer& l) { l.pitchFollow = r.follow.getToggleState(); }); };
         r.load.onClick = [this, i] {
-            chooser = std::make_unique<juce::FileChooser>("Load a part", juce::File(), "*.wav;*.aif;*.aiff;*.flac");
+            chooser = std::make_unique<juce::FileChooser>("Load a sample", juce::File(), "*.wav;*.aif;*.aiff;*.flac");
             chooser->launchAsync(juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
                                  [this, i](const juce::FileChooser& fc) {
                                      const auto file = fc.getResult();
@@ -154,20 +225,19 @@ void KlayEditor::refreshFromKick()
         r.sample.setText(l.samplePath.empty() ? "(empty)" : juce::File(juce::String::fromUTF8(l.samplePath.c_str())).getFileName(),
                          juce::dontSendNotification);
         r.fader.setValue(l.faderDb <= model::kMinusInfinityDb ? -60.0 : l.faderDb, juce::dontSendNotification);
-        r.semitones.setValue(l.pitchSemitones, juce::dontSendNotification);
-        r.cents.setValue(l.pitchCents, juce::dontSendNotification);
-        r.stretch.setValue(l.mode == model::LayerMode::tape ? l.tapeSpeed : l.length, juce::dontSendNotification);
+        r.configureKnob(l.mode);
+        r.knob.setValue(l.mode == model::LayerMode::pitch ? totalCents(l)
+                        : l.mode == model::LayerMode::tape ? l.tapeSpeed
+                                                           : l.length,
+                        juce::dontSendNotification);
+        for (int m = 0; m < 3; ++m)
+            r.modes[m].setToggleState(static_cast<int>(l.mode) == m, juce::dontSendNotification);
+        r.readout.setText(readout(l), juce::dontSendNotification);
         r.offset.setValue(l.offsetMs, juce::dontSendNotification);
-        r.mode.setSelectedItemIndex(static_cast<int>(l.mode), juce::dontSendNotification);
         r.routing.setSelectedItemIndex(static_cast<int>(l.routing), juce::dontSendNotification);
         r.mute.setToggleState(l.mute, juce::dontSendNotification);
         r.solo.setToggleState(l.solo, juce::dontSendNotification);
         r.follow.setToggleState(l.pitchFollow, juce::dontSendNotification);
-        // FR-106 (spec v0.10): only the active mode's control is live; the slider edits Length or Tape speed.
-        const bool pitchActive = l.mode == model::LayerMode::pitch;
-        r.semitones.setEnabled(pitchActive);
-        r.cents.setEnabled(pitchActive);
-        r.stretch.setEnabled(! pitchActive);
     }
 }
 
@@ -231,8 +301,8 @@ void KlayEditor::paint(juce::Graphics& g)
                juce::Justification::centredLeft);
     g.setColour(juce::Colours::white.withAlpha(0.5f));
     g.setFont(juce::FontOptions(12.0f));
-    g.drawText("layer | part | fader | pitch st | ct | stretch | mode | offset | M S P | bus", 12, kTopHeight - 18, kWidth - 24, 16,
-               juce::Justification::centredLeft);
+    g.drawText("layer | sample | fader | knob | Length / Pitch / Tape | what it does | offset | M S P | bus", 12, kTopHeight - 18,
+               kWidth - 24, 16, juce::Justification::centredLeft);
 }
 
 void KlayEditor::resized()
@@ -251,20 +321,22 @@ void KlayEditor::resized()
     int y = kTopHeight;
     for (auto& row : rows)
     {
-        auto r = juce::Rectangle<int>(12, y, kWidth - 24, kRowHeight - 4);
-        row->name.setBounds(r.removeFromLeft(90));
-        row->load.setBounds(r.removeFromLeft(48));
-        row->sample.setBounds(r.removeFromLeft(130));
-        row->fader.setBounds(r.removeFromLeft(150));
-        row->semitones.setBounds(r.removeFromLeft(130));
-        row->cents.setBounds(r.removeFromLeft(130));
-        row->stretch.setBounds(r.removeFromLeft(140));
-        row->mode.setBounds(r.removeFromLeft(86).reduced(2, 2));
-        row->offset.setBounds(r.removeFromLeft(140));
-        row->mute.setBounds(r.removeFromLeft(42));
-        row->solo.setBounds(r.removeFromLeft(42));
-        row->follow.setBounds(r.removeFromLeft(42));
-        row->routing.setBounds(r.reduced(2, 2));
+        auto r = juce::Rectangle<int>(12, y, kWidth - 24, kRowHeight - 6);
+        auto line = [](juce::Rectangle<int> b) { return b.withSizeKeepingCentre(b.getWidth(), 26); };
+        row->name.setBounds(line(r.removeFromLeft(90)));
+        row->load.setBounds(line(r.removeFromLeft(48)));
+        row->sample.setBounds(line(r.removeFromLeft(120)));
+        row->fader.setBounds(line(r.removeFromLeft(150)));
+        row->knob.setBounds(r.removeFromLeft(56));
+        auto modes = r.removeFromLeft(162).reduced(4, 0);
+        for (auto& b : row->modes)
+            b.setBounds(line(modes.removeFromLeft(modes.getWidth() / (3 - static_cast<int>(&b - row->modes))).reduced(1, 0)));
+        row->readout.setBounds(line(r.removeFromLeft(210)));
+        row->offset.setBounds(line(r.removeFromLeft(130)));
+        row->mute.setBounds(line(r.removeFromLeft(42)));
+        row->solo.setBounds(line(r.removeFromLeft(42)));
+        row->follow.setBounds(line(r.removeFromLeft(42)));
+        row->routing.setBounds(line(r).reduced(2, 0));
         y += kRowHeight;
     }
 }
