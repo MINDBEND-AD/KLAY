@@ -95,7 +95,7 @@ interfaces implemented in `adapters/`) · `plugin/` · `ui/` · `tools/render-cl
 | 0.5 ✓ | RT harness (Q1): allocation/lock hooks, audio-thread flag, `RT_GUARD` macro | NFR-001, FR-234 | UT: a deliberate allocation inside a guard is caught; the empty `processBlock` passes |
 | 0.6 ✓ | License check `tools/check-licenses.ps1`: GPL-family SPDX without the `LICENSE-GPL` marker, or missing from THIRD_PARTY_LICENSES.md, fails; runs as a ctest | C-006 | UT: an unmarked fixture file fails, the real tree passes |
 | 0.7 ✓ | `tools/validate.ps1`: pluginval (pinned) strictness 8 + VST3 validator on the built plugin | NFR-011 | PV passes, output shown |
-| 0.8 | Public GitHub repo (PO go-ahead before creating it; prerequisites in decision 3) + GitHub Actions workflow (windows, MSVC): configure, build, ctest, license check, PV | §10 | Green CI run shown |
+| 0.8 ✓ | Public GitHub repo (PO go-ahead before creating it; prerequisites in decision 3) + GitHub Actions workflow (windows, MSVC): configure, build, ctest, license check, PV | §10 | Green CI run shown |
 | 0.9 ✓ | `docs/checks/M0.md`: load, play and close in Ableton Live, Reaper, FL Studio | FR-007 (partial) | PO |
 
 **Exit M0:** the Release build, `ctest` (including the RT and license checks) and `validate.ps1` (pluginval
@@ -120,10 +120,11 @@ Reaper and FL Studio. Tag `m0-done`.
   `build/vst3-validator`); pluginval is downloaded per run-machine to `tools/bin/` and SHA-256 checked (GitHub
   publishes no digest for v1.0.4, so the hash is pinned on first download). The validator found the unnamed default
   program; it is now called "Default".
-- 0.8: open. `.github/workflows/ci.yml` is written (windows-latest; detects VS 2026 or 2022 because the runner image
-  may lack VS 2026). Creating `MINDBEND-AD/KLAY` was approved on 2026-10-19, but the push is on hold at the PO's
-  request: every commit carries the PO's personal email as author, and history must not be rewritten without the
-  PO's decision. Green CI run still to be shown.
+- 0.8: public repo https://github.com/MINDBEND-AD/KLAY (created 2026-10-19 with the PO's go-ahead; history was
+  rewritten by the PO beforehand so every commit uses the GitHub noreply address). `.github/workflows/ci.yml` runs on
+  windows-latest and picks VS 2026 or 2022 (the runner had VS 18.10, so 2026). First run green:
+  https://github.com/MINDBEND-AD/KLAY/actions/runs/39215941341 (29/29 ctest, licence check, pluginval strictness 8
+  SUCCESS, VST3 validator 47/0).
 - 0.9: checklist written (`docs/checks/M0.md`); the ✓ means the list exists. The PO's results in three hosts are
   still open and are part of the M0 exit.
 
