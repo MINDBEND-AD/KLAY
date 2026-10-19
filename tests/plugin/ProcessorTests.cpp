@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // LICENSE-GPL: KLAY own source, uses JUCE (AGPLv3). See THIRD_PARTY_LICENSES.md (C-006).
 #include "plugin/PluginProcessor.h"
+#include "tests/rt/RtHarness.h"
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
@@ -142,4 +143,53 @@ TEST_CASE("Editor opens and closes", "[plugin]")
 
     processor.editorBeingDeleted(editor.get());
     editor.reset();
+}
+
+// NFR-001, FR-234: processBlock (guarded by RT_GUARD inside) neither allocates nor locks.
+TEST_CASE("Processor processBlock is real-time safe", "[plugin][rt][NFR-001]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+
+    const double sampleRate = GENERATE(44100.0, 192000.0);
+    const int blockSize = GENERATE(16, 4096);
+    CAPTURE(sampleRate, blockSize);
+
+    klay::KlayProcessor processor;
+    processor.setPlayConfigDetails(0, 2, sampleRate, blockSize);
+    processor.prepareToPlay(sampleRate, blockSize);
+
+    juce::AudioBuffer<float> buffer(2, blockSize);
+    juce::MidiBuffer midi;
+    midi.ensureSize(256);
+
+    klay::rt::test::ScopedViolationRecorder recorder;
+    for (int block = 0; block < 16; ++block)
+    {
+        midi.addEvent(juce::MidiMessage::noteOn(1, 36, (juce::uint8) 100), 0);
+        processor.processBlock(buffer, midi);
+    }
+
+    const auto counts = recorder.counts();
+    CAPTURE(counts.allocations, counts.deallocations, counts.locks);
+    CHECK(counts.total() == 0);
+}
+
+// The harness also sees JUCE's own allocations and locks, which go through std::malloc and the OS, not operator new.
+TEST_CASE("RT harness catches JUCE allocations and locks", "[plugin][rt][NFR-001]")
+{
+    juce::AudioBuffer<float> buffer(2, 16);
+    juce::CriticalSection section;
+
+    klay::rt::test::ScopedViolationRecorder recorder;
+    {
+        RT_GUARD;
+        buffer.setSize(2, 8192);
+    }
+    CHECK(recorder.counts().allocations >= 1);
+
+    {
+        RT_GUARD;
+        const juce::ScopedLock lock(section);
+    }
+    CHECK(recorder.counts().locks >= 1);
 }

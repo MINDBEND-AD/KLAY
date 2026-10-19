@@ -4,7 +4,9 @@
 # klay_core: platform-neutral model/render/DSP code. Must not link or include JUCE (C-007).
 add_library(klay_core STATIC
     model/StateHeader.cpp
-    model/StateHeader.h)
+    model/StateHeader.h
+    rt/RtGuard.h
+    rt/RtMutex.h)
 
 target_include_directories(klay_core PUBLIC ${PROJECT_SOURCE_DIR})
 target_compile_features(klay_core PUBLIC cxx_std_20)

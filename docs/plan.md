@@ -92,7 +92,7 @@ interfaces implemented in `adapters/`) · `plugin/` · `ui/` · `tools/render-cl
 | 0.2 ✓ | CMake + CMakePresets (VS 2026 x64, Debug/Release); FetchContent pins; targets `klay_core` (static, no JUCE), `KLAY` (juce_add_plugin, VST3 only, synth, MIDI in, stereo out; identity per decision 4), `klay_tests` | C-001, C-002 | Clean configure + build produces `Klaymore.vst3`; host shows "Klaymore" by "MINDBEND AD" |
 | 0.3 ✓ | Empty AudioProcessor: silence out, accepts 44.1–192 kHz and 16–4096 blocks; empty editor showing name + version; state stub with `schemaVersion` | C-001, FR-005, FR-003 (stub) | UT: process at every SR × block-size combination, no crash, silent output; state round-trip |
 | 0.4 ✓ | Test harness: Catch2 under ctest; JUCE-free core test plus a processor smoke test | §12 | `ctest` passes |
-| 0.5 | RT harness (Q1): allocation/lock hooks, audio-thread flag, `RT_GUARD` macro | NFR-001, FR-234 | UT: a deliberate allocation inside a guard is caught; the empty `processBlock` passes |
+| 0.5 ✓ | RT harness (Q1): allocation/lock hooks, audio-thread flag, `RT_GUARD` macro | NFR-001, FR-234 | UT: a deliberate allocation inside a guard is caught; the empty `processBlock` passes |
 | 0.6 | License check `tools/check-licenses.ps1`: GPL-family SPDX without the `LICENSE-GPL` marker, or missing from THIRD_PARTY_LICENSES.md, fails; runs as a ctest | C-006 | UT: an unmarked fixture file fails, the real tree passes |
 | 0.7 | `tools/validate.ps1`: pluginval (pinned) strictness 8 + VST3 validator on the built plugin | NFR-011 | PV passes, output shown |
 | 0.8 | Public GitHub repo (PO go-ahead before creating it; prerequisites in decision 3) + GitHub Actions workflow (windows, MSVC): configure, build, ctest, license check, PV | §10 | Green CI run shown |
@@ -108,6 +108,14 @@ Reaper and FL Studio. Tag `m0-done`.
   whole plugin is AGPL through JUCE; THIRD_PARTY_LICENSES.md has a "KLAY own source" row so the C-006 check covers
   them. Pins: JUCE 8.0.16-security (JUCE 9 exists, but the fixed decision is JUCE 8), Catch2 v3.16.1, Signalsmith
   Stretch 1.4.0 (declared now, fetched from M1), VST3 SDK v3.8.0_build_66 (validator only), pluginval v1.0.4.
+- 0.4: tests are split into `klay_core_tests` (JUCE-free, proves C-007) and `klay_tests` (plugin); a ctest also
+  fails if any file under `core/` includes JUCE.
+- 0.5: the RT guard lives in `core/rt/` (a folder not in the §10 list; JUCE-free). Beyond the decision-1
+  `operator new`/`delete` hook and the `klay::rt::Mutex` wrapper, the test harness patches the test executable's
+  import table for HeapAlloc/HeapReAlloc/HeapFree and the blocking lock/wait calls, so `std::malloc` (JUCE's
+  `HeapBlock`, `AudioBuffer`), `std::mutex` and `juce::CriticalSection` inside `RT_GUARD` are caught too. Zero-timeout
+  waits and try-locks are allowed. Plain `malloc` in the shipped plugin is unaffected; the hooks exist in test
+  executables only. `RT_GUARD` stays in `processBlock` of the shipped plugin (one thread-local increment).
 
 ## M1 Layer engine
 

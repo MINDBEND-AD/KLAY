@@ -3,6 +3,8 @@
 #include "plugin/PluginProcessor.h"
 #include "plugin/PluginEditor.h"
 
+#include "core/rt/RtGuard.h"
+
 namespace klay
 {
 
@@ -27,7 +29,9 @@ bool KlayProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
 
 void KlayProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi)
 {
-    // Real-time path (NFR-001, FR-234): no allocation, locks, I/O or logging.
+    // Real-time path (NFR-001, FR-234): no allocation, locks, I/O or logging. RT_GUARD lets the test harness
+    // catch violations; it costs one thread-local increment in the shipped plugin.
+    RT_GUARD;
     juce::ScopedNoDenormals noDenormals;
     midi.clear();
     buffer.clear();
