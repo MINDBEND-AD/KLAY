@@ -4,7 +4,7 @@ Oct 19, 2026 · @Bernard
 
 ## 1. Document control & purpose
 
-This is version 0.4 (draft) of the requirements and specification for KLAY (working title), a layer-based kick drum plugin inspired by a commercial layer-based kick plugin. Its job is to give the coding session a single, testable source of truth.
+This is version 0.5 (draft) of the requirements and specification for KLAY (working title), a layer-based kick drum plugin inspired by a commercial layer-based kick plugin. Its job is to give the coding session a single, testable source of truth.
 
 - **Scope:** a VST3 instrument plugin for Windows that stacks sample layers into a kick, processes it through a modular FX rack, and exports the result. Version 1 is a pure sample player with no genre style targets.
 - **Out of scope (v1):** synthesis (planned for version 2), genre style targets, macOS / AU / AAX, standalone app, copy protection and licensing, distribution, stem export (version 2), sequencing.
@@ -458,7 +458,7 @@ Two main pages, Kick (default) and FX, switched from the top bar. The library is
 | UI-004 | In Layer view the volume envelope editor (section 7.8) is overlaid on the waveform with its snap grid; Shift+drag on the waveform moves the layer in time; handles at the waveform's left and right edges set start and end trim (FR-102) | Must |
 | UI-005 | Time axis spans the kick length (FR-108); labels toggle between beats and ms (ms from host BPM) | Should |
 | UI-006 | Clip toggle, active in Sum view only: highlights master-output samples above 0 dBFS | Should |
-| UI-007 | Layer card: colour dot, layer name (double-click to rename), bin icon top right (disabled when locked); role selector; ◀ ▶ part browsing; mini waveform with the part name; Pitch (±12 st, ±100 ct) and Stretch (0.25–8×) knobs with a Stretch / Repitch mode switch (FR-106; default Stretch, Pitch greyed out in Repitch); vertical volume fader on the right with the routing button below it (MAIN / A1 / A2, click cycles); buttons L lock, M mute, S solo, P pitch-follow, ↻ re-roll. The selected card is highlighted | Must |
+| UI-007 | Layer card: colour dot, layer name (double-click to rename), bin icon top right (disabled when locked); role selector; ◀ ▶ part browsing; mini waveform with the part name; Pitch (±12 st, ±100 ct) and Stretch (0.25–8×) knobs; a small Stretch / Repitch switch directly below the Pitch knob (FR-106; default Stretch; in Repitch the Pitch knob is greyed out and shows the resulting pitch); vertical volume fader on the right with the routing button below it (MAIN / A1 / A2, click cycles); buttons L lock, M mute, S solo, P pitch-follow, ↻ re-roll. The selected card is highlighted | Must |
 | UI-008 | FX page: left sidebar listing all FX modules; three chain columns side by side (Main, Aux 1, Aux 2); modules dragged from the sidebar into a chain and reordered by drag | Must |
 | UI-009 | Each module row has a ▼ icon that expands it to show all controls and a ▲ icon that collapses it again; a bin icon deletes the module (same icon as on the layer cards). Any number of modules can be expanded at once; an expanded view pushes the content below it down | Must |
 | UI-010 | The FX page scrolls vertically when content exceeds the window height | Must |
@@ -468,9 +468,21 @@ Two main pages, Kick (default) and FX, switched from the top bar. The library is
 | UI-014 | Colour themes (min. 2: dark default + one alternative) | Could |
 | UI-015 | Keyboard: Ctrl+Z, Ctrl+Shift+Z, space to audition | Should |
 | UI-016 | Tooltips on every control; double-click resets to default; Ctrl-drag for fine adjust on knobs and faders (Ctrl+drag on an FX module's header copies the module instead, FR-211) | Should |
-| UI-017 | Settings menu: kick length, envelope grid (4×4 / 8×8 / 16×16), roll template, key layer, host-tempo sync or manual BPM (default 155), restore or reset on launch, oversampling Live / Export (warning when Live is Off: distortion may alias, and the TP switch can no longer catch peaks between samples during playback), Mono filter slope (6 / 12 / 24 / 48 dB/oct, default 12), autogain on/off (FR-109, default On), colour theme, window size | Must |
+| UI-017 | Settings menu: kick length, envelope grid (4×4 / 8×8 / 16×16), roll template, key layer, host-tempo sync or manual BPM (default 155), restore or reset on launch, oversampling Live / Export (warning when Live is Off: distortion may alias, and the TP switch can no longer catch peaks between samples during playback), Mono filter slope (6 / 12 / 24 / 48 dB/oct, default 12), autogain on/off (FR-109, default On), library preview on click (On/Off, default On; UI-024), colour theme, window size | Must |
 | UI-018 | Mono dial above the visualiser, left of Drag Master, labelled "Mono" only. A value arc around the dial shows the setting (empty arc = Off); the Hz value pops up on hover and while dragging (UI-019). Range 0 (Off) to 500 Hz, default 120 Hz, logarithmic travel | Must |
 | UI-019 | All dials share one behaviour: a value arc around the dial (empty at minimum or Off); the value pops up on hover and while dragging; a soft catch at the default value while dragging; double-click resets to default; right-click opens a field to type an exact value; Ctrl+drag and the mouse wheel give fine steps. Travel is linear for every dial except Mono (UI-018) and Stretch, which are logarithmic; the layer volume fader uses a top-weighted taper (FR-101) | Must |
+| UI-020 | Default theme “Forge”: gunmetal neutrals (body #111214, panel #1c1e21, edge #3a3d42, text #e9e5de, dim text #959089) with chamfered panel corners. Ember #ff5a1f is the only colour for on and selected, and the only colour that glows (soft bloom on the visualiser trace, values, meters and active controls). Bronze #c58b4b marks section headings, the Main route, trim handles and fader caps, never an on state. Amber #e0b04a means muted or a warning; red #ff3b30 means clipping only. Layer names are white. Fonts: Saira Condensed for labels, JetBrains Mono for values (both SIL Open Font License) | Must |
+| UI-021 | Meters (OUT and module peak meters) use a temper scale: dull red at low level, through ember, to white at 0 dBFS; the clip LED turns red and holds for 1 s | Should |
+| UI-022 | Layer card states: selected = ember edge with glow; muted = amber M and a dimmed waveform; soloed = ember S, other layers dimmed; locked = LOCKED badge and the bin disabled; empty = dashed outline, “Drop a sample here” and a Roll button; drop target = ember dashed outline with the file name; missing sample = amber edge plus a message with Relink… | Must |
+| UI-023 | Value pop-ups (UI-019) draw above every panel and are never clipped by a panel edge; near the top of the window they appear below the control | Must |
+| UI-024 | Library preview: a single click on a sample plays it. Settings → Library preview On/Off, default On; with Off, nothing plays until the sample is on a layer and the kick is triggered | Should |
+| UI-025 | Collapsing the library leaves a 40 px rail: expand button, search, one button per role. A role button expands the library opened at that role, and the role row is briefly highlighted. The visualiser and layer cards take the freed width; the window size does not change | Must |
+| UI-026 | Window size M is 1180 × 760 px; XS–XL scale from it (UI-013); at XS the library starts collapsed | Should |
+| UI-027 | Key display states (FR-120, FR-123): detected = note and Hz in ember; uncertain = amber with “?” after the note; none = “—” | Should |
+| UI-028 | Layer fader scale (FR-101): ticks at 0, −3, −6, −12, −24 dB and −∞; half the travel covers 0 to about −13 dB | Should |
+| UI-029 | The preset field shows FACTORY or USER before the preset name; the visualiser footer shows the selected layer's offset, trim range and envelope point count | Could |
+
+Visual design reference: the [Kick page mock](https://claude.ai/artifact/LKLNeY4AEsZHF6ZJFW3WyV) shows the Forge theme and every card, key, dial and meter state (UI-020 to UI-029). The wireframes below show layout. The layer-card knob design (Pitch, Stretch) is provisional and will be revisited when UI work starts in M3.
 
 Page structure is decided; the Kick page, FX page and Settings menu wireframes are below.
 
@@ -616,6 +628,7 @@ These need answers before or during the first coding session.
 
 - [x] **MVP module specs** (Distortion, Equalizer, Filters, Finalizer) — done 2026-10-18 in 7.5.2–7.5.5 (factory preset names still to come); common rules are in 7.5.1.
 - [ ] **Export dither (FR-262):** dither yes or no? Review before the MVP release (M5). Until then the default stays: deterministic TPDF dither on 24-bit, none on 32-bit float.
+- [ ] **Layer-card knobs (UI-007):** the Pitch and Stretch knob design is provisional; revisit it when UI development starts (M3).
 
 **Decision log**
 
@@ -664,7 +677,8 @@ These need answers before or during the first coding session.
 | 2026-10-19 | Real-time safety verified by an MSVC allocation/lock test harness instead of RealtimeSanitizer | The toolchain is MSVC and RealtimeSanitizer is Clang-only; a clang-cl job can follow later |
 | 2026-10-19 | MVP host automation: master gain, aux returns and mutes, Mono, TP; FX module automation in M6. Finalizer at neutral bypasses the clipper path. 24-bit export uses deterministic TPDF dither | Plan review; VST3 needs a fixed parameter list; bit-identical neutral state; keeps NFR-009 |
 | 2026-10-19 | Temporary dev editor in M1–M2, removed in M3; modules ship only “Init” in the MVP; stale roll-template row and Crunch key note removed; document version 0.4 | Plan review (docs/plan.md in the code repo) |
-| 2026-10-19 | Layer mode default Stretch; in Repitch mode the Pitch knob is greyed out and the Stretch knob sets the varispeed (FR-106, UI-007). The kick-page wireframe has no mode switch yet: update it before M3 UI work. Signalsmith pitch-shift accuracy (up to ~8 cents on a sine) accepted, judged in LT-2. Stretched parts are level-compensated to the input RMS | Product owner decisions from the M1 review; FR-106 did not say what the knobs do in Repitch mode, and Signalsmith loses up to ~3.5 dB at long stretches |
+| 2026-10-19 | Layer mode default Stretch; in Repitch mode the Pitch knob is greyed out and the Stretch knob sets the varispeed (FR-106, UI-007). The kick-page wireframe has no mode switch yet: update it before M3 UI work. Signalsmith pitch-shift accuracy (up to \~8 cents on a sine) accepted, judged in LT-2. Stretched parts are level-compensated to the input RMS | Product owner decisions from the M1 review; FR-106 did not say what the knobs do in Repitch mode, and Signalsmith loses up to \~3.5 dB at long stretches |
+| 2026-10-19 | Visual design: Forge theme (gunmetal + bronze, ember as the only active and glowing colour, standard bloom, temper-scale meters), white layer names; Kick page mock is the design reference (UI-020 to UI-029). Library preview on single click, switchable in Settings. Collapsed library becomes a rail; a role button expands it at that role. Stretch / Repitch switch sits below the Pitch knob. Layer-card knob design to be revisited in M3; document version 0.5 | Product owner decisions from the UI design review |
 
 ### Sources
 
