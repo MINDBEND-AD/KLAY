@@ -106,3 +106,26 @@ add_test(NAME "licence check: 8.3 short root passes"
             -Fixture ${licence_fixtures}/short-path-root)
 set_tests_properties("licence check: 8.3 short root passes" PROPERTIES
     PASS_REGULAR_EXPRESSION "licence check passed: 1 code file" SKIP_RETURN_CODE 77)
+
+# Golden-file null tests (§12, task 1.14): each fixture kick renders within −120 dBFS of its stored WAV. The parts
+# under fixtures/kicks/samples come from `klay-render fixtures`; regenerate the goldens with `klay-render render`
+# only on purpose (a deliberate change to the render) and say so in the commit.
+foreach(kick punch stack repitch)
+    add_test(NAME "golden: ${kick} kick nulls against its reference"
+        COMMAND klay_render_cli render
+                --kick ${CMAKE_CURRENT_SOURCE_DIR}/fixtures/kicks/${kick}.json
+                --out ${CMAKE_CURRENT_BINARY_DIR}/golden-${kick}.wav --sr 48000
+                --compare ${CMAKE_CURRENT_SOURCE_DIR}/fixtures/kicks/golden/${kick}.wav)
+endforeach()
+
+# The null test must fail for a changed kick (0.1 dB on one fader) and for a different length.
+add_test(NAME "golden: a 0.1 dB fader change fails the null test"
+    COMMAND klay_render_cli render --kick ${CMAKE_CURRENT_SOURCE_DIR}/fixtures/kicks/punch-variant.json
+            --out ${CMAKE_CURRENT_BINARY_DIR}/golden-variant.wav --sr 48000
+            --compare ${CMAKE_CURRENT_SOURCE_DIR}/fixtures/kicks/golden/punch.wav)
+set_tests_properties("golden: a 0.1 dB fader change fails the null test" PROPERTIES WILL_FAIL TRUE)
+add_test(NAME "golden: a different length fails the null test"
+    COMMAND klay_render_cli render --kick ${CMAKE_CURRENT_SOURCE_DIR}/fixtures/kicks/stack.json
+            --out ${CMAKE_CURRENT_BINARY_DIR}/golden-length.wav --sr 48000
+            --compare ${CMAKE_CURRENT_SOURCE_DIR}/fixtures/kicks/golden/punch.wav)
+set_tests_properties("golden: a different length fails the null test" PROPERTIES WILL_FAIL TRUE)

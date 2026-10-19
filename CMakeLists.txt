@@ -20,6 +20,7 @@ include(cmake/Dependencies.cmake)
 add_subdirectory(core)
 add_subdirectory(adapters)
 add_subdirectory(plugin)
+add_subdirectory(tools/render-cli)
 
 if(KLAY_BUILD_TESTS)
     enable_testing()

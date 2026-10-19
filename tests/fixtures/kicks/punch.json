@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "settings": { "kickLength": "1/4", "manualBpm": 150.0, "autogain": true },
+  "layers": [
+    { "name": "Kick", "role": "kick", "sample": "samples/body.wav",
+      "envelope": { "points": [ { "timeMs": 0.0, "gain": 1.0, "tension": 0.0 }, { "timeMs": 250.0, "gain": 0.6, "tension": 0.5 }, { "timeMs": 390.0, "gain": 0.0, "tension": 0.0 } ] } },
+    { "name": "Rumble", "role": "rumble" },
+    { "name": "Drive", "role": "drive" },
+    { "name": "Crunch", "role": "crunch" },
+    { "name": "Transient", "role": "transient", "sample": "samples/transient.wav", "faderDb": -4.5 },
+    { "name": "Texture", "role": "texture" }
+  ]
+}
