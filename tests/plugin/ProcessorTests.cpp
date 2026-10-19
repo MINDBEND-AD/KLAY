@@ -147,14 +147,16 @@ TEST_CASE("Editor opens and closes", "[plugin]")
     editor.reset();
 }
 
-// NFR-001, FR-234: processBlock (guarded by RT_GUARD inside) neither allocates nor locks.
+// NFR-001, FR-234: the audio-thread entry points neither allocate nor lock. The test wraps each call in its own
+// RT_GUARD, so it still fails if the guard inside processBlock is removed.
 TEST_CASE("Processor processBlock is real-time safe", "[plugin][rt][NFR-001]")
 {
     juce::ScopedJuceInitialiser_GUI juceInit;
 
     const double sampleRate = GENERATE(44100.0, 192000.0);
     const int blockSize = GENERATE(16, 4096);
-    CAPTURE(sampleRate, blockSize);
+    const bool bypassed = GENERATE(false, true);
+    CAPTURE(sampleRate, blockSize, bypassed);
 
     klay::KlayProcessor processor;
     processor.setPlayConfigDetails(0, 2, sampleRate, blockSize);
@@ -167,13 +169,27 @@ TEST_CASE("Processor processBlock is real-time safe", "[plugin][rt][NFR-001]")
     klay::rt::test::ScopedViolationRecorder recorder;
     for (int block = 0; block < 16; ++block)
     {
+        midi.clear();
         midi.addEvent(juce::MidiMessage::noteOn(1, 36, (juce::uint8) 100), 0);
-        processor.processBlock(buffer, midi);
+        RT_GUARD;
+        if (bypassed)
+            processor.processBlockBypassed(buffer, midi);
+        else
+            processor.processBlock(buffer, midi);
     }
 
     const auto counts = recorder.counts();
     CAPTURE(counts.allocations, counts.deallocations, counts.locks);
     CHECK(counts.total() == 0);
+}
+
+// M0 renders in single precision only, so hosts never call the double-precision processBlock. When a later
+// milestone adds it, replace this with an RT test of the double overload (NFR-001).
+TEST_CASE("Processor does not support double precision", "[plugin][rt][NFR-001]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    klay::KlayProcessor processor;
+    CHECK_FALSE(processor.supportsDoublePrecisionProcessing());
 }
 
 // The harness also sees JUCE's own allocations and locks, which go through std::malloc and the OS, not operator new.
