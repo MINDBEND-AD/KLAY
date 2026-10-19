@@ -11,9 +11,8 @@
 using namespace klay;
 
 // FR-104, FR-105, FR-106 Stretch mode (task 1.6): exact output length and the pitch of a sine within ±2 cents for
-// both presets over 0.25–8×. Level within ±1 dB holds for the default preset up to 4×; at 8× (default) and from 2×
-// (cheaper) Signalsmith loses up to ~3.5 dB on a pure sine, so those cases are only bounded at ±4 dB (deviation
-// logged in docs/plan.md for LT-1).
+// both presets over 0.25–8×, and level within ±1 dB at every factor (Signalsmith alone loses up to ~3.5 dB at long
+// stretches; the wrapper compensates, PO decision 2026-10-19).
 TEST_CASE("Stretch keeps pitch and level and gives the exact length", "[core][stretch][FR-104][FR-105]")
 {
     const auto preset = GENERATE(model::StretchPreset::standard, model::StretchPreset::cheaper);
@@ -35,8 +34,7 @@ TEST_CASE("Stretch keeps pitch and level and gives the exact length", "[core][st
         CHECK(std::abs(test::cents(hz, 220.0)) < 2.0);
 
     const double levelDb = 20.0 * std::log10(test::rms(output.left.data(), from, to) / test::rms(input.left.data(), n / 4, n * 3 / 4));
-    const bool levelInSpec = preset == model::StretchPreset::standard ? factor <= 4.0 : factor < 2.0;
-    CHECK(std::abs(levelDb) < (levelInSpec ? 1.0 : 4.5));
+    CHECK(std::abs(levelDb) < 1.0);
 }
 
 // Length-preserving pitch shift at 1× (the Key Track cache case). Signalsmith 1.4.0 misses a pure sine by up to

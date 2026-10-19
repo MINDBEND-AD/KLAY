@@ -54,6 +54,26 @@ StereoBuffer stretch(const StereoBuffer& input, double sampleRate, double length
         const size_t available = std::min(outLength, paddedOut - std::min(paddedOut, outStart));
         std::copy_n(src.begin() + static_cast<std::ptrdiff_t>(outStart), available, result.channel(ch));
     }
+
+    // Level compensation (PO decision 2026-10-19): Signalsmith loses up to ~3.5 dB at long stretches. An ideal
+    // time-stretch keeps the mean square (stretching the amplitude envelope in time does not change its average),
+    // so the output is scaled to the input's RMS over both channels.
+    const auto meanSquare = [](const StereoBuffer& b) {
+        double sum = 0.0;
+        for (int ch = 0; ch < 2; ++ch)
+            for (size_t i = 0; i < b.size(); ++i)
+                sum += static_cast<double>(b.channel(ch)[i]) * b.channel(ch)[i];
+        return b.size() > 0 ? sum / static_cast<double>(2 * b.size()) : 0.0;
+    };
+    const double inMs = meanSquare(input);
+    const double outMs = meanSquare(result);
+    if (inMs > 0.0 && outMs > 0.0)
+    {
+        const auto gain = static_cast<float>(std::sqrt(inMs / outMs));
+        for (int ch = 0; ch < 2; ++ch)
+            for (size_t i = 0; i < result.size(); ++i)
+                result.channel(ch)[i] *= gain;
+    }
     return result;
 }
 
