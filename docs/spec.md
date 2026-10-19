@@ -4,7 +4,7 @@ Oct 19, 2026 · @Bernard
 
 ## 1. Document control & purpose
 
-This is version 0.8 (draft) of the requirements and specification for KLAY (working title), a layer-based kick drum plugin inspired by a commercial layer-based kick plugin. Its job is to give the coding session a single, testable source of truth.
+This is version 0.9 (draft) of the requirements and specification for KLAY (working title), a layer-based kick drum plugin inspired by a commercial layer-based kick plugin. Its job is to give the coding session a single, testable source of truth.
 
 - **Scope:** a VST3 instrument plugin for Windows that stacks sample layers into a kick, processes it through a modular FX rack, and exports the result. Version 1 is a pure sample player with no genre style targets.
 - **Out of scope (v1):** synthesis (planned for version 2), genre style targets, macOS / AU / AAX, standalone app, copy protection and licensing, distribution, stem export (version 2), sequencing.
@@ -684,6 +684,7 @@ These need answers before or during the first coding session.
 | 2026-10-19 | One layer knob with a three-way mode switch (Stretch: length only · Pitch: pitch only · Repitch: tape-style, both together), default Stretch; replaces the separate Pitch and Stretch knobs (FR-104–106, UI-007, UI-019). Implemented in the second pass of M1, since M1 is running on v0.4. Render in place on the card planned for version 2 (FR-117); document version 0.6 | Product owner decision; the v0.5 mock showed two knobs plus a switch were redundant, and one transform per layer keeps the card simple |
 | 2026-10-19 | UI wording changed to stay clear of the reference product's feature names: Drag Master → Export all; Drag Stems → Export layer; Randomize All → Forge; per-layer roll → Reforge; layer modes Stretch / Pitch / Repitch → Length / Pitch / Tape; Finalizer → Temper; Equalizer → EQ; Multiband → Split Dynamics; Convolver → Space; “restore or reset on launch” → “on open: last session or empty kick”; OUT → MASTER; window sizes XS–XL → 75–200 %; chain lock is icon-only; “part” → “layer”/“sample” in the UI. Kept: Key Track, pitch-follow (P), Clip, Crunch. Earlier rows keep the old names; document version 0.7 | Product owner decisions from the wording review against the reference product; lowers trademark and look-alike risk (section 11) |
 | 2026-10-19 | Section 3 (reference product analysis) moved to a private document; the spec keeps a one-line pointer and the section number. Document version 0.8 | Product owner decision; the spec is published with the AGPL source, the competitor analysis should not be |
+| 2026-10-19 | The reference product is no longer named in the spec (sections 1, 11, decision log, sources); the repository history was rewritten once so no earlier version names it either. Document version 0.9 | Product owner decision; one-time, approved exception to the never-rewrite-history rule |
 
 ### Sources
 
