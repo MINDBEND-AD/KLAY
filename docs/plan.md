@@ -263,7 +263,7 @@ The spec contradictions C1–C6 (below) were resolved by the PO the same day: pr
 | 1.20 ✓ | Renderer: `processPart` applies only the active mode — Length: Signalsmith length change; Pitch: exact-pitch shift at 1× (time-stretch + Repitch, as the cache); Tape: Lagrange varispeed at the tape speed (Q-A). Processed-part cache key and key detection follow the active mode | FR-104–106, FR-107, FR-120 | UT per mode: length exact, pitch of a sine ±2 ct, Tape speed → length and pitch together; inactive values have no effect; render bit-identical across runs |
 | 1.21 ✓ | Fixtures and goldens: the three fixture kicks move to schema 2 (`stack.json` used Stretch + Pitch on one layer, so it changes), goldens regenerated on purpose and committed with the reason; render-cli `listening` file names use "tape" for the varispeed references | §12, NFR-009 | GT: 3 kicks null at −120 dBFS against the new goldens; the two must-fail checks still fail; a v1 kick JSON renders through the migration |
 | 1.22 | Dev editor: one knob per layer with a Length · Pitch · Tape switch below it; label, range and readout follow the mode (Length 0.25–8×, Pitch ±12 st ±100 ct, Speed 0.25–8× with the resulting pitch); log travel in Length and Tape; "sample" instead of "part" in its text (v0.7 wording) | FR-106, UI-007, UI-019 (dev editor only) | UT: editor opens with each mode; PO: switch modes on a layer, each keeps its value and only the active one is heard |
-| 1.23 | Plan wording to v0.9 for the later milestones: Forge / Reforge (2.3, 2.7), Export all (M5), Temper / EQ (M4), task 3.4 uses the one layer knob, window sizes 75–200 % (3.1); no code | — | Review |
+| 1.23 ✓ | Plan wording to v0.9 for the later milestones: Forge / Reforge (2.3, 2.7), Export all (M5), Temper / EQ (M4), task 3.4 uses the one layer knob, window sizes 75–200 % (3.1); no code | — | Review |
 | 1.24 | Full re-run: build, `ctest`, `validate.ps1` (pluginval strictness 8 + VST3 validator), CI green; PO re-checks 1.22 and steps 1.2–1.5 of `docs/checks/M1.md` in one DAW | NFR-011 | Shown passing; PO |
 
 **Second-pass notes (Claude Code, 2026-10-19)**
@@ -282,6 +282,8 @@ The spec contradictions C1–C6 (below) were resolved by the PO the same day: pr
   cents −1300…+1300 split into st + ct), a Length · Pitch · Tape radio switch and a readout of what the active mode does;
   "sample" instead of "part" in its text. UT drives the knob and switch; not ticked until the PO has run the re-check in
   `docs/checks/M1.md` (section "Second-pass re-check").
+- 1.23: M2–M5 rows use the v0.10 wording (Forge / Reforge, Export all, EQ, Temper, MASTER, 75–200 %, one layer knob
+  in 3.4). The dated decisions at the top of this plan keep their original names, as the spec's decision log does.
 
 **Questions, answered by the PO on 2026-10-19 (all proposals accepted)**
 - **Q-A Tape value:** UI-007 labels the Tape knob "Speed 0.25–8×", FR-106 says "0.25–8×". Decision: the stored value is
@@ -320,11 +322,11 @@ which may be confused with the layer's Tape mode in UI text and docs.
 |---|---|---|---|
 | 2.1 | Sample index: scan Role → sub-folder → files; metadata (role, folder, root, length, peak) built in the background; disk cache with mtime invalidation | FR-160, FR-165, NFR-007, NFR-008 | UT on a fixture tree: built, reused, invalidated; BM: startup with cache < 1.5 s, RAM < 300 MB |
 | 2.2 | Role pools; layer roles default from name, "Any" role | FR-140 | UT |
-| 2.3 | Seeded RNG + roll engine: Randomize All over the roll template, per-layer roll, locked layers untouched, only the sample replaced | FR-141, FR-142, FR-143, FR-146, FR-147 | UT: Gherkin "layer 2 locked, layer 3 Crunch"; same seed gives the same roll; fader/envelope/offset/pitch/stretch/routing unchanged |
+| 2.3 | Seeded RNG + roll engine: Forge over the roll template, Reforge per layer, locked layers untouched, only the sample replaced | FR-141, FR-142, FR-143, FR-146, FR-147 | UT: Gherkin "layer 2 locked, layer 3 Crunch"; same seed gives the same roll; fader/envelope/offset/pitch/stretch/routing unchanged |
 | 2.4 | Layer operations: lock, mute (Shift unmutes all), exclusive solo (Shift adds), bin (disabled when locked), select, rename | FR-110–114 | UT incl. the Gherkin solo example |
 | 2.5 | Undo manager: commands for all model and settings edits, ≥ 50 steps, one gesture = one step | FR-145, FR-239 | UT: 60 edits undone/redone gives identical state |
-| 2.6 | Roll latency: chosen samples loaded on a background thread; measure | NFR-005 | BM: Randomize All to audible < 100 ms |
-| 2.7 | Dev editor extension: Randomize All, per-layer roll and lock, undo/redo | — (temporary) | PO |
+| 2.6 | Roll latency: chosen samples loaded on a background thread; measure | NFR-005 | BM: Forge to audible < 100 ms |
+| 2.7 | Dev editor extension: Forge, Reforge per layer, lock, undo/redo | — (temporary) | PO |
 
 **Exit M2:** all UT/RT pass and are shown; NFR-005 and NFR-008 benchmarks pass; the PO runs UC-1 and UC-2 on the
 dev editor with the factory library per `docs/checks/M2.md`. Tag `m2-done`.
@@ -333,10 +335,10 @@ dev editor with the factory library per `docs/checks/M2.md`. Tag `m2-done`.
 
 | # | Task | IDs | Verify |
 |---|---|---|---|
-| 3.1 | UI foundation: theme tokens (dark), vector drawing, window sizes XS–XL + drag corner, HiDPI; shared Dial (arc, value pop-up, soft catch, double-click reset, right-click entry, Ctrl/wheel fine steps, log option); top-weighted fader taper (−∞…0 dB, decision 8); tooltips | UI-013, UI-016, UI-019 | UT on dial and fader value mapping and soft catch; PO visual |
-| 3.2 | Top bar: Kick/FX switch, Randomize All, undo/redo, audition (+ space), preset field shell (arrows, dirty dot), save icon, Settings button, OUT meter + master fader capped at 0 dB | UI-001, UI-015, FR-116, FR-217 | UT: fader can't exceed 0 dB; PO |
+| 3.1 | UI foundation: theme tokens (dark), vector drawing, window sizes 75–200 % of 1180 × 760 (UI-013, UI-026) + drag corner, HiDPI; shared Dial (arc, value pop-up, soft catch, double-click reset, right-click entry, Ctrl/wheel fine steps, log option); top-weighted fader taper (−∞…0 dB, decision 8); tooltips | UI-013, UI-016, UI-019 | UT on dial and fader value mapping and soft catch; PO visual |
+| 3.2 | Top bar: Kick/FX switch, Forge, undo/redo, audition (+ space), preset field shell (arrows, dirty dot), save icon, Settings button, MASTER meter + master fader capped at 0 dB | UI-001, UI-015, FR-116, FR-217 | UT: fader can't exceed 0 dB; PO |
 | 3.3 | Library sidebar: Samples/Presets tabs, role tree, file-name search, drag a sample onto a card, hide toggle | UI-002, FR-162, FR-166 | PO |
-| 3.4 | Layer cards per UI-007: empty state, file drop, role selector, ◀ ▶ browsing, mini waveform, Pitch/Stretch, fader, routing button (MAIN/A1/A2), L M S P ↻, bin, rename | UI-007, FR-110–114, FR-122, FR-142, FR-203 (UI) | PO against the kick-page wireframe |
+| 3.4 | Layer cards per UI-007: empty state, file drop, role selector, ◀ ▶ browsing, mini waveform, one layer knob with the Length · Pitch · Tape switch and readout (FR-106, revisit the knob design first, spec §14), fader, routing button (MAIN/A1/A2), L M S P ↻, bin, rename | UI-007, FR-110–114, FR-122, FR-142, FR-203 (UI) | PO against the kick-page wireframe |
 | 3.5 | Visualiser: Layer/Sum views (Q11), beats/ms axis, key display, Clip toggle in Sum only, Shift+drag offset, start and end trim handles (decision 9); ≥ 30 fps, never blocks audio | UI-003–006, FR-102, FR-123, NFR-006 | UT on the clip mask; BM fps; PO |
 | 3.6 | Envelope editor overlay (logic in a JUCE-free class) | FR-280–284, FR-286, FR-239 | UT on add/remove/drag/bend/snap/Alt; PO |
 | 3.7 | Settings menu: every UI-017 item (oversampling and Mono slope stored now, active in M4), roll template, key layer, BPM, on launch, window size, autogain switch (decision 7); Mono slope default 12 dB/oct | UI-017, FR-124, FR-146, FR-244 | UT: settings persist and are undoable; PO against the settings wireframe |
@@ -357,14 +359,14 @@ re-runs UC-1 and UC-2 on the real UI per `docs/checks/M3.md`. Tag `m3-done`.
 | 4.2 | Oversampling service (adapter over juce::dsp::Oversampling): Live / Export / host offline 8×; IIR min-phase live, FIR linear-phase export | FR-212, FR-213, FR-301 | UT: latency per factor; aliasing of a 15 kHz sine through tanh at 48 kHz below the target |
 | 4.3 | Matched biquads (Vicanek): LP, HP, BP, notch, AP, bell, shelves; 6/12/24 cascades | FR-215, FR-316, FR-321 | UT: magnitude against the analog prototype within 0.5 dB up to 20 kHz at 44.1 kHz |
 | 4.4 | Distortion: 10 modes, Drive, Bias, Character, Tone, DC blocker, mode crossfade, two-stage Amp modes; "Init" preset | FR-229, FR-300–306, FR-309 | UT: transfer curves match the formulas; FR-304 THD < 1 %; no DC with Bias/Rectify; no click on mode switch |
-| 4.5 | Equalizer: 4 bands, slopes, type crossfade, note-name entry, flat Init | FR-310–316 | UT: responses; Init is bit-transparent; Notch ignores Gain |
+| 4.5 | EQ: 4 bands, slopes, type crossfade, note-name entry, flat Init | FR-310–316 | UT: responses; Init is bit-transparent; Notch ignores Gain |
 | 4.6 | Filters: 5 types, slopes, Q, Drive Pre/Post, Init | FR-320–325 | UT: responses; AP magnitude flat and phase correct; Drive 0 dB adds no latency and no change |
-| 4.7 | Finalizer: low shelf, clip gain, knee, ceiling (Q12), Init | FR-330–333 | UT: ceiling held at the oversampled rate; neutral passthrough per Q12 |
+| 4.7 | Temper: low shelf, clip gain, knee, ceiling (Q12), Init | FR-330–333 | UT: ceiling held at the oversampled rate; neutral passthrough per Q12 |
 | 4.8 | Chain engine: Main/A1/A2, aux return + mute, per-chain and global bypass, path delay compensation, total latency to the host, alternating instances per note | FR-200, FR-202–206, FR-210, FR-214, FR-236 | UT: Gherkin "A1 muted → layer 1 silent"; GT: path-alignment null test at every oversampling factor |
 | 4.9 | Master section: Mono dial (elliptical filter, 6/12/24/48), master fader, TP true-peak clipper | FR-004, FR-216, FR-217, FR-218, UI-018 | UT: Gherkin Mono example, bit-identical at 0; TP output ≤ 0 dBTP (BS.1770 meter, 4×); latency reported |
 | 4.10 | Module and chain presets: preset row, Init per module, chain save/load into any chain, chain lock survives rolls | FR-208, FR-209, FR-222, FR-224, FR-245 | UT: round-trip; lock survives Randomize All |
 | 4.11 | FX page: module sidebar, 3 columns, drag & drop insert/reorder, Ctrl+drag copy, move between chains keeps settings, expand/collapse, bin, vertical scroll, chain headers | UI-008–011, FR-201, FR-211, FR-220–223 | UT on chain-edit operations; PO against the FX wireframes |
-| 4.12 | Module displays: Distortion curve + waveforms; EQ curve with 2 spectra, shading and nodes; Filters curve/phase + node; Finalizer clip view, LED, GR max | FR-303, FR-312, FR-313, FR-323, FR-332, UI-012 | PO; BM ≥ 30 fps |
+| 4.12 | Module displays: Distortion curve + waveforms; EQ curve with 2 spectra, shading and nodes; Filters curve/phase + node; Temper clip view, LED, GR max | FR-303, FR-312, FR-313, FR-323, FR-332, UI-012 | PO; BM ≥ 30 fps |
 | 4.13 | Host parameters per Q13, IDs frozen; FX edits in undo | FR-006, FR-145, FR-235, FR-239 | PV (automation tests); UT: undo of FX edits |
 | 4.14 | Sum view and Clip switch to the post-FX display render | UI-003, UI-006 | PO |
 | 4.15 | Performance | FR-237, NFR-002, NFR-010 | BM: each module < 1 % of a core at 48 kHz / Live 2×; 9 modules < 5 %; RT clean |
@@ -380,7 +382,7 @@ module views against the wireframes per `docs/checks/M4.md`. Tag `m4-done`.
 | 5.2 | Preset browser: Factory/User folders, ‹ › arrows, dirty dot, floppy save / save as, Presets tab, search + favourites; chain lock respected on load | FR-241, FR-242, FR-245, FR-208 | UT: dirty state, lock on load; PO |
 | 5.3 | On launch: restore last session or reset | FR-244 | UT |
 | 5.4 | Export renderer: stack + all chains at the Export factor, Mono, fader, TP; 24-bit WAV with dither (Q16; PO reviews "dither yes or no?" before M5 sign-off) or 32-bit float; file name with preset, key, BPM | FR-210, FR-260, FR-262, FR-263, NFR-009, NFR-016 | GT: export matches render-cli; two exports bit-identical; BM: < 1 s for a 1-bar kick at 8× |
-| 5.5 | Drag Master (external file drag) + save dialog from its menu | FR-260, FR-264 | PO in hosts |
+| 5.5 | Export all (external file drag) + save dialog from its menu | FR-260, FR-264 | PO in hosts |
 | 5.6 | Full state recall incl. FX chains and settings | FR-003, UC-7 | UT/GT: Gherkin "save + reopen → bit-identical" with FX |
 | 5.7 | Final pass: PV, RT, all BMs; `docs/checks/M5.md` host smoke test (load, MIDI, automation, save/reload, drag export) in the agreed hosts | FR-007, NFR-011 | PV + PO |
 
