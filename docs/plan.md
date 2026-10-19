@@ -213,9 +213,9 @@ LT-2 and AC-5 results. Tag `m1-done`.
   in LT-2; (2) the renderer compensates the stretch level loss: `render::stretch` scales its output to the input RMS
   (an ideal time-stretch keeps the mean square), so level is within ±1 dB at every factor and preset (UT tightened);
   (3) Repitch mode (FR-106): default mode is Stretch; in Repitch mode the Pitch knob is greyed out, so the Stretch
-  knob is the varispeed control (length and pitch change together; Claude Code's reading, to confirm with the spec
-  update). The renderer still uses the Pitch knob as varispeed and must follow when M1 resumes. FR-106 and UI-007
-  need this wording in the spec (Claude Docs v0.4, then re-export), and the wireframes lack the mode switch (see M3); (4) factory samples go to the staging folder
+  knob is the varispeed control (length and pitch change together). Spec updated 2026-10-19 (FR-106, UI-007, decision log; Claude Docs and
+  docs/spec.md). The renderer still uses the Pitch knob as varispeed and must follow when M1 resumes; the wireframes
+  lack the mode switch (see M3); (4) factory samples go to the staging folder
   `C:\dev\KLAY-samples\` (outside the public repo), one sub-folder per layer role: Kick, Rumble, Drive, Crunch,
   Transient, Texture.
 - Session stop (2026-10-19): 1.12 (cache part), 1.14–1.17 are open; status, open PO decisions and the verified

@@ -111,7 +111,7 @@ Requirements are grouped by subsystem; each maps to a module in section 10.
 | FR-103 | Per layer: drawable volume envelope (section 7.8); replaces separate fades | Must |
 | FR-104 | Per layer: pitch ±12 semitones and ±100 cents, length-preserving (Signalsmith Stretch) | Must |
 | FR-105 | **Per layer: length change without pitch change**, 0.25×–8×, using Signalsmith Stretch — top priority of the pitch/length features | Must |
-| FR-106 | Per layer mode: Stretch (Signalsmith, pitch kept) and Repitch (varispeed, pitch and length change together) | Must |
+| FR-106 | Per layer mode, default Stretch. Stretch (Signalsmith): the Pitch knob changes pitch without changing length, the Stretch knob changes length without changing pitch. Repitch (varispeed): the Pitch knob is greyed out and the Stretch knob sets the playback speed, so pitch and length change together | Must |
 | FR-107 | Stack is rendered offline whenever a layer edit occurs, into three cached buses (Main-routed, Aux 1, Aux 2), each split into pitch-following and fixed layers for real-time Key Track (FR-125); playback reads the cache | Must |
 | FR-108 | Kick length set in Settings as a note value: 1/16, 1/8, 1/4 (default), 1/2, 1 bar; converted to ms from host BPM; defines visualiser, render and export length, with a 5 ms soft fade at the end. Envelope points keep their absolute time when the length changes | Must |
 | FR-109 | Autogain (on/off in Settings, default On): one gain, computed from the summed pre-FX buses (Main, Aux 1, Aux 2) and applied equally to all of them, normalises the rendered stack to a target peak (default −0.3 dBFS) before the FX chains | Should |
@@ -458,7 +458,7 @@ Two main pages, Kick (default) and FX, switched from the top bar. The library is
 | UI-004 | In Layer view the volume envelope editor (section 7.8) is overlaid on the waveform with its snap grid; Shift+drag on the waveform moves the layer in time; handles at the waveform's left and right edges set start and end trim (FR-102) | Must |
 | UI-005 | Time axis spans the kick length (FR-108); labels toggle between beats and ms (ms from host BPM) | Should |
 | UI-006 | Clip toggle, active in Sum view only: highlights master-output samples above 0 dBFS | Should |
-| UI-007 | Layer card: colour dot, layer name (double-click to rename), bin icon top right (disabled when locked); role selector; ◀ ▶ part browsing; mini waveform with the part name; Pitch (±12 st, ±100 ct) and Stretch (0.25–8×) knobs; vertical volume fader on the right with the routing button below it (MAIN / A1 / A2, click cycles); buttons L lock, M mute, S solo, P pitch-follow, ↻ re-roll. The selected card is highlighted | Must |
+| UI-007 | Layer card: colour dot, layer name (double-click to rename), bin icon top right (disabled when locked); role selector; ◀ ▶ part browsing; mini waveform with the part name; Pitch (±12 st, ±100 ct) and Stretch (0.25–8×) knobs with a Stretch / Repitch mode switch (FR-106; default Stretch, Pitch greyed out in Repitch); vertical volume fader on the right with the routing button below it (MAIN / A1 / A2, click cycles); buttons L lock, M mute, S solo, P pitch-follow, ↻ re-roll. The selected card is highlighted | Must |
 | UI-008 | FX page: left sidebar listing all FX modules; three chain columns side by side (Main, Aux 1, Aux 2); modules dragged from the sidebar into a chain and reordered by drag | Must |
 | UI-009 | Each module row has a ▼ icon that expands it to show all controls and a ▲ icon that collapses it again; a bin icon deletes the module (same icon as on the layer cards). Any number of modules can be expanded at once; an expanded view pushes the content below it down | Must |
 | UI-010 | The FX page scrolls vertically when content exceeds the window height | Must |
@@ -664,6 +664,7 @@ These need answers before or during the first coding session.
 | 2026-10-19 | Real-time safety verified by an MSVC allocation/lock test harness instead of RealtimeSanitizer | The toolchain is MSVC and RealtimeSanitizer is Clang-only; a clang-cl job can follow later |
 | 2026-10-19 | MVP host automation: master gain, aux returns and mutes, Mono, TP; FX module automation in M6. Finalizer at neutral bypasses the clipper path. 24-bit export uses deterministic TPDF dither | Plan review; VST3 needs a fixed parameter list; bit-identical neutral state; keeps NFR-009 |
 | 2026-10-19 | Temporary dev editor in M1–M2, removed in M3; modules ship only “Init” in the MVP; stale roll-template row and Crunch key note removed; document version 0.4 | Plan review (docs/plan.md in the code repo) |
+| 2026-10-19 | Layer mode default Stretch; in Repitch mode the Pitch knob is greyed out and the Stretch knob sets the varispeed (FR-106, UI-007). The kick-page wireframe has no mode switch yet: update it before M3 UI work. Signalsmith pitch-shift accuracy (up to ~8 cents on a sine) accepted, judged in LT-2. Stretched parts are level-compensated to the input RMS | Product owner decisions from the M1 review; FR-106 did not say what the knobs do in Repitch mode, and Signalsmith loses up to ~3.5 dB at long stretches |
 
 ### Sources
 
