@@ -6,11 +6,13 @@
 
 .DESCRIPTION
     Rules (see THIRD_PARTY_LICENSES.md):
-      1. Every code file (.h .hpp .c .cpp .inl .cmake .ps1 CMakeLists.txt) has an SPDX-License-Identifier
-         in its first 10 lines.
+      1. Every code file (C/C++/ObjC sources and headers, .cmake .ps1 .psm1 .py .sh .bat .cmd .yml .yaml,
+         CMakeLists.txt) has an SPDX-License-Identifier in its first 10 lines.
       2. Every file whose SPDX header names a GPL-family licence (GPL, LGPL, AGPL) contains the marker LICENSE-GPL.
-      3. Every such file matches a glob in the Files column of a GPL-family row of THIRD_PARTY_LICENSES.md.
-      4. Every dependency declared with FetchContent_Declare(<name> ...) has a row whose Component starts with <name>.
+      3. Every such file matches a glob in the Files column of a GPL-family row of THIRD_PARTY_LICENSES.md, and
+         every GPL-family licence ID in its SPDX expression appears in the Licence cell of such a covering row.
+      4. Every dependency declared with FetchContent_Declare(<name> ...) has a row whose Component equals <name>
+         (case-insensitive).
 
 .PARAMETER Root
     Tree to check. Defaults to the repository root (the parent of this script's folder).
@@ -29,7 +31,9 @@ if (-not (Test-Path -LiteralPath $Root -PathType Container)) {
     Write-Output "ERROR: root '$Root' does not exist"
     exit 2
 }
-$Root = (Resolve-Path -LiteralPath $Root).Path.TrimEnd('\', '/')
+# Get-Item expands 8.3 short names (Resolve-Path keeps them); Get-ChildItem returns long names, so the relative
+# paths below are only right if the root is long too.
+$Root = (Get-Item -LiteralPath $Root -Force).FullName.TrimEnd('\', '/')
 
 $licenceFile = Join-Path $Root 'THIRD_PARTY_LICENSES.md'
 if (-not (Test-Path -LiteralPath $licenceFile)) {
@@ -38,7 +42,14 @@ if (-not (Test-Path -LiteralPath $licenceFile)) {
 }
 
 $gplPattern = '(?i)\b(A|L)?GPL'
-$codeExtensions = @('.h', '.hpp', '.c', '.cpp', '.inl', '.cmake', '.ps1')
+$codeExtensions = @(
+    '.h', '.hh', '.hpp', '.hxx', '.c', '.cc', '.cpp', '.cxx', '.inl', '.ipp', '.m', '.mm',
+    '.cmake', '.ps1', '.psm1', '.py', '.sh', '.bat', '.cmd', '.yml', '.yaml')
+
+# GPL-family SPDX licence IDs in an expression or a Licence cell, e.g. 'AGPL-3.0-only', 'GPL-2.0-or-later'.
+function Get-GplIds([string] $text) {
+    return @([regex]::Matches($text, '[A-Za-z0-9.+-]+') | ForEach-Object { $_.Value } | Where-Object { $_ -match $gplPattern })
+}
 $skipPrefixes = @('.git/', 'build/', 'out/', '.vs/', 'tools/bin/') + $Exclude
 
 function ConvertTo-GlobRegex([string] $glob) {
@@ -58,7 +69,7 @@ function ConvertTo-GlobRegex([string] $glob) {
 
 # --- Parse THIRD_PARTY_LICENSES.md -----------------------------------------------------------------------------
 $components = @()
-$gplGlobs = @()
+$gplRows = @()   # GPL-family rows: component, licence IDs and file globs (as regexes)
 foreach ($line in Get-Content -LiteralPath $licenceFile -Encoding UTF8) {
     if ($line -notmatch '^\s*\|') { continue }
     $cells = $line.Trim().Trim('|').Split('|') | ForEach-Object { $_.Trim() }
@@ -67,9 +78,8 @@ foreach ($line in Get-Content -LiteralPath $licenceFile -Encoding UTF8) {
 
     $components += $cells[0]
     if ($cells[1] -match $gplPattern) {
-        foreach ($m in [regex]::Matches($cells[3], '`([^`]+)`')) {
-            $gplGlobs += ConvertTo-GlobRegex $m.Groups[1].Value
-        }
+        $globs = @([regex]::Matches($cells[3], '`([^`]+)`') | ForEach-Object { ConvertTo-GlobRegex $_.Groups[1].Value })
+        $gplRows += [pscustomobject]@{ Component = $cells[0]; Licence = $cells[1]; Ids = Get-GplIds $cells[1]; Globs = $globs }
     }
 }
 
@@ -95,7 +105,7 @@ foreach ($file in $files) {
         foreach ($m in [regex]::Matches($text, '(?i)FetchContent_Declare\s*\(\s*([A-Za-z0-9_.+-]+)')) {
             $name = $m.Groups[1].Value
             $hasRow = $false
-            foreach ($c in $components) { if ($c.StartsWith($name, [StringComparison]::OrdinalIgnoreCase)) { $hasRow = $true; break } }
+            foreach ($c in $components) { if ([string]::Equals($c, $name, [StringComparison]::OrdinalIgnoreCase)) { $hasRow = $true; break } }
             if (-not $hasRow) {
                 $violations.Add("${rel}: dependency '$name' (FetchContent_Declare) has no row in THIRD_PARTY_LICENSES.md")
             }
@@ -117,10 +127,21 @@ foreach ($file in $files) {
         $violations.Add("${rel}: GPL-family licence ($expression) but missing LICENSE-GPL marker")
     }
 
-    $listed = $false
-    foreach ($re in $gplGlobs) { if ($rel -match $re) { $listed = $true; break } }
-    if (-not $listed) {
+    # Rule 3: covered by a GPL-family row whose Licence cell names every GPL-family ID of the file's expression.
+    $covering = @($gplRows | Where-Object { $row = $_; @($row.Globs | Where-Object { $rel -match $_ }).Count -gt 0 })
+    if ($covering.Count -eq 0) {
         $violations.Add("${rel}: GPL-family licence ($expression) but not listed in THIRD_PARTY_LICENSES.md")
+        continue
+    }
+    $fileIds = Get-GplIds $expression
+    $matched = $false
+    foreach ($row in $covering) {
+        $missing = @($fileIds | Where-Object { $id = $_; -not @($row.Ids | Where-Object { [string]::Equals($_, $id, [StringComparison]::OrdinalIgnoreCase) }).Count })
+        if ($missing.Count -eq 0) { $matched = $true; break }
+    }
+    if (-not $matched) {
+        $rows = ($covering | ForEach-Object { "'$($_.Component)' ($($_.Licence))" }) -join ', '
+        $violations.Add("${rel}: SPDX licence ($expression) does not match the licence of its THIRD_PARTY_LICENSES.md row $rows")
     }
 }
 

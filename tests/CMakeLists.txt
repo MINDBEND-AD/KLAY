@@ -72,3 +72,21 @@ set_tests_properties("licence check: undeclared dependency fails" PROPERTIES
 add_test(NAME "licence check: missing SPDX header fails" COMMAND ${licence_check} -Root ${licence_fixtures}/no-spdx)
 set_tests_properties("licence check: missing SPDX header fails" PROPERTIES
     PASS_REGULAR_EXPRESSION "FAIL: src/no_header.cpp: no SPDX-License-Identifier")
+
+add_test(NAME "licence check: other code extensions are scanned" COMMAND ${licence_check} -Root ${licence_fixtures}/other-extensions)
+set_tests_properties("licence check: other code extensions are scanned" PROPERTIES
+    PASS_REGULAR_EXPRESSION "licence check failed: 9 violation[(]s[)] in 9 code file")
+
+add_test(NAME "licence check: SPDX licence not matching its row fails" COMMAND ${licence_check} -Root ${licence_fixtures}/licence-mismatch)
+set_tests_properties("licence check: SPDX licence not matching its row fails" PROPERTIES
+    PASS_REGULAR_EXPRESSION "FAIL: src/gpl2.cpp: SPDX licence [(]GPL-2.0-only[)] does not match .*'Own code'.*licence check failed: 1 violation")
+
+add_test(NAME "licence check: dependency name prefix of a component fails" COMMAND ${licence_check} -Root ${licence_fixtures}/prefix-dep)
+set_tests_properties("licence check: dependency name prefix of a component fails" PROPERTIES
+    PASS_REGULAR_EXPRESSION "FAIL: CMakeLists.txt: dependency 'JUC'")
+
+add_test(NAME "licence check: 8.3 short root passes"
+    COMMAND ${KLAY_POWERSHELL} -NoProfile -ExecutionPolicy Bypass -File ${CMAKE_CURRENT_SOURCE_DIR}/scripts/check-licenses-short-root.ps1
+            -Fixture ${licence_fixtures}/short-path-root)
+set_tests_properties("licence check: 8.3 short root passes" PROPERTIES
+    PASS_REGULAR_EXPRESSION "licence check passed: 1 code file" SKIP_RETURN_CODE 77)

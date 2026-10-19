@@ -126,6 +126,11 @@ Reaper and FL Studio. Tag `m0-done`.
   inside other DLLs (only the test executable's import table is patched, so e.g. work inside a system DLL that
   allocates internally is not seen), and OS calls not on the hook list (e.g. `CreateFile2`, `NtWaitForSingleObject`,
   console APIs, registry access). Code review and the §12 listening/DAW tests stay the backstop for those.
+- 0.6 (after the M0 review): the licence check also scans .cc .cxx .hh .hxx .ipp .m .mm .psm1 .py .sh .bat .cmd
+  .yml .yaml (so `.github/**` joined the own-source row); a GPL-family file must match a row whose Licence cell
+  names every GPL-family ID of its SPDX expression (a GPL-2.0 file under the AGPL globs fails); dependency names
+  must equal a Component cell (case-insensitive), not just prefix it; an 8.3 short `-Root` works. Each rule has a
+  failing fixture and a ctest; the short-path ctest skips (code 77) on volumes without 8.3 names.
 - 0.7: the VST3 validator is built from the pinned SDK by a separate CMake project (`tools/vst3-validator`, into
   `build/vst3-validator`); pluginval is downloaded per run-machine to `tools/bin/` and SHA-256 checked (GitHub
   publishes no digest for v1.0.4, so the hash is pinned on first download). The validator found the unnamed default

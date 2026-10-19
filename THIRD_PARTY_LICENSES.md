@@ -8,16 +8,16 @@ SPDX header, the searchable marker comment `LICENSE-GPL`, and a row in the table
 replaced for a closed commercial release. `tools/check-licenses.ps1` enforces this (it runs as a ctest and in CI):
 
 - every file in the tree with a GPL-family `SPDX-License-Identifier` must contain `LICENSE-GPL` and match a glob in
-  the **Files** column of a GPL-family row;
+  the **Files** column of a GPL-family row whose **Licence** cell names the licence(s) of its SPDX expression;
 - every dependency fetched in CMake (`FetchContent_Declare(<name> …)`) must have a row whose **Component** cell
-  starts with that name.
+  equals that name (case-insensitive).
 
 Rows are machine-read: keep one component per row, globs in backticks, separated by commas.
 
 | Component | Licence | Version | Files | Replacement option |
 | --- | --- | --- | --- | --- |
 | JUCE | AGPL-3.0-only (or JUCE commercial licence) | 8.0.16-security | `build/_deps/juce-src/**` (fetched, not in the repo) | Buy a JUCE commercial licence; no code change needed |
-| KLAY own source | AGPL-3.0-only | — | `core/**`, `adapters/**`, `plugin/**`, `ui/**`, `tools/**`, `tests/**`, `cmake/**`, `CMakeLists.txt` | Owner relicenses own code; JUCE-dependent layers (`plugin/`, `ui/`, `adapters/`) need a JUCE commercial licence (C-007) |
+| KLAY own source | AGPL-3.0-only | — | `core/**`, `adapters/**`, `plugin/**`, `ui/**`, `tools/**`, `tests/**`, `cmake/**`, `.github/**`, `CMakeLists.txt` | Owner relicenses own code; JUCE-dependent layers (`plugin/`, `ui/`, `adapters/`) need a JUCE commercial licence (C-007) |
 | vst3sdk | MIT (VST3 SDK, since 3.8) | v3.8.0_build_66 | `build/vst3-validator/_deps/vst3sdk-src/**` (fetched by `tools/vst3-validator`; validator only, not linked into the plugin) | Not GPL; keep |
 | signalsmith-stretch | MIT | 1.4.0 | fetched from M1 on | Not GPL; keep (attribution notice required) |
 | Catch2 | BSL-1.0 | v3.16.1 | `build/_deps/catch2-src/**` (fetched; tests only) | Not GPL; keep |
