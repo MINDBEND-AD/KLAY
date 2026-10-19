@@ -166,9 +166,9 @@ Reaper and FL Studio. Tag `m0-done`.
 | 1.12 ✓ | Transposition cache + Key Track: background ±12 st nearest-first, others on first play, LRU cap; real-time Repitch fallback (preallocated); key layer from Settings (Q6) | FR-121, FR-122, FR-124, FR-125, NFR-003, NFR-014, NFR-015 | UT: Gherkin "root F, note G → +2 st, fixed layers unchanged"; first output sample at the note-on offset (zero added latency); eviction under the cap; fallback path RT clean |
 | 1.13 ✓ | Processor state: full stack + settings + sample paths; missing samples reported, not crashing | FR-003 (stack part) | UT: Gherkin "save + reopen → bit-identical render" |
 | 1.14 ✓ | `tools/render-cli`: kick JSON → WAV; golden-file null test (−120 dBFS) | §12 | GT: 3 fixture kicks |
-| 1.15 | Dev editor (Q14): load kick JSON, per-layer basic controls, audition | — (temporary) | PO uses it in 1.17 |
+| 1.15 ✓ | Dev editor (Q14): load kick JSON, per-layer basic controls, audition | — (temporary) | PO uses it in 1.17 |
 | 1.16 ✓ | Assumption-check harness: AC-1 cache RAM, AC-2 build time, AC-3 playback CPU, AC-4 latency; results in `docs/checks/M1.md` | AC-1–AC-4, NFR-002, NFR-014, NFR-015 | BM results recorded against targets |
-| 1.17 | Listening material via render-cli: LT-1 sets (5 ratios × 2 presets + references), AC-5 A/B pairs, LT-2 transpositions; check steps in `docs/checks/M1.md` | LT-1, LT-2, AC-5 | PO; results and chosen stretch preset go to the decision log |
+| 1.17 ✓ | Listening material via render-cli: LT-1 sets (5 ratios × 2 presets + references), AC-5 A/B pairs, LT-2 transpositions; check steps in `docs/checks/M1.md` | LT-1, LT-2, AC-5 | PO; results and chosen stretch preset go to the decision log |
 
 **Exit M1:** all UT/GT/RT pass and are shown; AC-1–AC-4 results are recorded and within targets (or a deviation is
 noted for the PO); the PO confirms a hand-built kick plays in key in a DAW and records LT-1 as passed, plus the
@@ -243,8 +243,9 @@ LT-2 and AC-5 results. Tag `m1-done`.
   fallback, blind) material, level-matched, fixed-seed blind order; a ctest runs it on the synthetic parts. Not
   ticked: needs the PO's parts and listening (steps in `docs/checks/M1.md`).
 - Final verified run (2026-10-19, dev machine, Release): build OK, `ctest` 102/102 passed, `tools/validate.ps1`
-  pluginval strictness 8 PASSED, VST3 validator 47 passed / 0 failed. Open for the PO: 1.15 and 1.17 manual checks
-  and the M1 exit (`docs/checks/M1.md`).
+  pluginval strictness 8 PASSED, VST3 validator 47 passed / 0 failed. PO manual checks (dev editor and DAW play-in-key,
+  LT-1, LT-2, AC-5) reported all passed; 1.15 and 1.17 ticked. M1 exit met apart from the `m1-done` tag, which the PO
+  sets after the milestone review.
 
 ## M2 Library + randomizer
 
