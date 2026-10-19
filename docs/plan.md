@@ -163,7 +163,7 @@ Reaper and FL Studio. Tag `m0-done`.
 | 1.9 ✓ | Voice + MIDI: monophonic; note-on cuts the old kick with a 5 ms fade; velocity ignored; 5 ms fade on transport stop; audition trigger API | FR-001, FR-115, FR-116 (API), FR-236 (stop fade) | UT: Gherkin "ringing kick fades within 5 ms, new one at full level"; velocity 1 and 127 give identical output; RT clean |
 | 1.10 ✓ | Host tempo: read playhead BPM, debounced re-render on change; manual override | FR-002 | UT with a simulated playhead |
 | 1.11 ✓ | Key detection: YIN 30–150 Hz, median over the settled tail; FFT peak cross-check; uncertain flag; note name + Hz | FR-120, FR-123 (data) | UT: synthetic kicks with known f0 (clean, tanh-distorted, pitch glide) detected to ±10 cents; disagreeing case flagged |
-| 1.12 | Transposition cache + Key Track: background ±12 st nearest-first, others on first play, LRU cap; real-time Repitch fallback (preallocated); key layer from Settings (Q6) | FR-121, FR-122, FR-124, FR-125, NFR-003, NFR-014, NFR-015 | UT: Gherkin "root F, note G → +2 st, fixed layers unchanged"; first output sample at the note-on offset (zero added latency); eviction under the cap; fallback path RT clean |
+| 1.12 ✓ | Transposition cache + Key Track: background ±12 st nearest-first, others on first play, LRU cap; real-time Repitch fallback (preallocated); key layer from Settings (Q6) | FR-121, FR-122, FR-124, FR-125, NFR-003, NFR-014, NFR-015 | UT: Gherkin "root F, note G → +2 st, fixed layers unchanged"; first output sample at the note-on offset (zero added latency); eviction under the cap; fallback path RT clean |
 | 1.13 ✓ | Processor state: full stack + settings + sample paths; missing samples reported, not crashing | FR-003 (stack part) | UT: Gherkin "save + reopen → bit-identical render" |
 | 1.14 | `tools/render-cli`: kick JSON → WAV; golden-file null test (−120 dBFS) | §12 | GT: 3 fixture kicks |
 | 1.15 | Dev editor (Q14): load kick JSON, per-layer basic controls, audition | — (temporary) | PO uses it in 1.17 |
@@ -218,6 +218,15 @@ LT-2 and AC-5 results. Tag `m1-done`.
   lack the mode switch (see M3); (4) factory samples go to the staging folder
   `C:\dev\KLAY-samples\` (outside the public repo), one sub-folder per layer role: Kick, Rumble, Drive, Crunch,
   Transient, Texture.
+- 1.12: `core/render/KickEngine` = RenderEngine + transposition cache (TranspositionSource for the player). After each
+  render: root ±1…±12 nearest first on the worker; a note played before it is ready plays through the Repitch fallback
+  and is queued (built next, ahead of the prebuild). Byte cap 128 MB (NFR-014); prebuilt notes only fill free space,
+  a played note evicts the least recently played ones. Two hazard slots (one per voice); entries carry the render
+  generation, so stale ones are never played. **Pitch method changed (PO to confirm):** the cache test showed
+  Signalsmith's own pitch shift 45 cents sharp at kick fundamentals (43.65 Hz, +2 st), far worse than the ~8 cents
+  at 330 Hz the PO accepted. All pitch shifts (cache and the Stretch-mode Pitch knob) are now a Signalsmith
+  time-stretch by the pitch ratio plus a Lagrange Repitch back to length: pitch within ±2 cents up to a 2× internal
+  stretch, ±6 cents beyond (45 Hz, 1.5× and +12 st). LT-2 and AC-5 judge the sound.
 - Session stop (2026-10-19): 1.12 (cache part), 1.14–1.17 are open; status, open PO decisions and the verified
   build/ctest/pluginval results are in `docs/checks/M1.md`. 1.12 is not ticked: the real-time Repitch fallback and
   Key Track are done and tested, the background transposition cache is not.

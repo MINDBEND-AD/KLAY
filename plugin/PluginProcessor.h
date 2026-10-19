@@ -3,8 +3,8 @@
 #pragma once
 
 #include "core/model/Kick.h"
+#include "core/render/KickEngine.h"
 #include "core/render/KickPlayer.h"
-#include "core/render/RenderEngine.h"
 #include "core/render/TempoDebouncer.h"
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -76,7 +76,7 @@ public:
     void pollHostTempo(double nowMs);
     // FR-003: parts referenced by the kick that could not be loaded (from the newest render).
     std::vector<std::string> getMissingSamples() const;
-    render::RenderEngine& getEngine() noexcept { return *engine; }
+    render::KickEngine& getEngine() noexcept { return *engine; }
     double getEffectiveBpm() const;
 
 private:
@@ -85,7 +85,7 @@ private:
 
     model::Kick kick = model::makeDefaultKick();
     SampleCache sampleCache;
-    std::unique_ptr<render::RenderEngine> engine;
+    std::unique_ptr<render::KickEngine> engine;
     render::TempoDebouncer tempo;
     double currentSampleRate = 48000.0;
 

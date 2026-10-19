@@ -17,6 +17,7 @@ endif()
 # JUCE-free core tests (C-007): links only klay_core, the RT harness and Catch2, so the core is proven to build and
 # run without JUCE.
 add_executable(klay_core_tests
+    core/CacheTests.cpp
     core/KeyDetectionTests.cpp
     core/KickModelTests.cpp
     core/PlayerTests.cpp

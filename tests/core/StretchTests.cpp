@@ -37,21 +37,27 @@ TEST_CASE("Stretch keeps pitch and level and gives the exact length", "[core][st
     CHECK(std::abs(levelDb) < 1.0);
 }
 
-// Length-preserving pitch shift at 1× (the Key Track cache case). Signalsmith 1.4.0 misses a pure sine by up to
-// ~8 cents with the default preset (330 Hz, −12…+12 st), not the ±2 the plan asked for; logged as a deviation for
-// the PO (LT-2). The bound here catches regressions. The cheaper preset is off by up to ~20 cents.
+// Length-preserving pitch shift (FR-104, the Key Track cache case): time-stretch by the ratio + Repitch gives the
+// pitch of a sine within ±2 cents at kick fundamentals and above, for any length factor. Signalsmith's own pitch
+// shift (no resampler) missed by up to ~45 cents at 45 Hz and ~8 cents at 330 Hz.
 TEST_CASE("Length-preserving pitch shift hits the target pitch", "[core][stretch][FR-104]")
 {
-    const double semitones = GENERATE(-12.0, -5.0, -0.5, 3.0, 7.25, 12.0);
+    const double semitones = GENERATE(-12.0, -5.0, -0.5, 2.0, 7.25, 12.0);
+    const double hz0 = GENERATE(45.0, 330.0);
+    const double factor = GENERATE(1.0, 1.5);
     const double sr = 48000.0;
-    const size_t n = 24000;
-    CAPTURE(semitones);
+    const size_t n = 48000;
+    CAPTURE(semitones, hz0, factor);
 
-    const auto input = test::sine(330.0, sr, n);
-    const auto output = render::stretch(input, sr, 1.0, semitones, model::StretchPreset::standard);
-    REQUIRE(output.size() == n);
-    const double hz = test::zeroCrossingHz(output.left.data(), n / 4, n * 3 / 4, sr);
-    CHECK(std::abs(test::cents(hz, 330.0) - semitones * 100.0) < 10.0);
+    const render::ResamplerFactory resamplers = [] { return std::make_unique<test::LinearResampler>(); };
+    const auto input = test::sine(hz0, sr, n);
+    const auto output = render::stretch(input, sr, factor, semitones, model::StretchPreset::standard, resamplers);
+    REQUIRE(output.size() == static_cast<size_t>(std::llround(n * factor)));
+    const double hz = test::zeroCrossingHz(output.left.data(), output.size() / 4, output.size() * 3 / 4, sr);
+    // Up to a 2× internal stretch (length × pitch ratio) within ±2 cents; beyond it Signalsmith's time-stretch drifts
+    // at 45 Hz (5.3 cents measured at 1.5× and +12 st, i.e. 3× internally).
+    const double internal = factor * std::exp2(semitones / 12.0);
+    CHECK(std::abs(test::cents(hz, hz0) - semitones * 100.0) < (internal <= 2.0 ? 2.0 : 6.0));
 }
 
 TEST_CASE("Stretch is a bit-exact copy at 1x and deterministic otherwise", "[core][stretch][NFR-009]")

@@ -27,7 +27,7 @@ std::shared_ptr<const render::SampleData> SampleCache::get(const std::string& pa
 KlayProcessor::KlayProcessor()
     : AudioProcessor(BusesProperties().withOutput("Output", juce::AudioChannelSet::stereo(), true))
 {
-    engine = std::make_unique<render::RenderEngine>(render::RenderEngine::Config{
+    engine = std::make_unique<render::KickEngine>(render::RenderEngine::Config{
         [this](const std::string& path) { return sampleCache.get(path, currentSampleRate); },
         adapters::lagrangeResamplerFactory(), true });
     requestRender();
@@ -37,14 +37,14 @@ KlayProcessor::KlayProcessor()
 KlayProcessor::~KlayProcessor()
 {
     stopTimer();
-    player.reset(*engine, nullptr);
+    player.reset(*engine, engine.get());
     engine.reset();
 }
 
 void KlayProcessor::prepareToPlay(double sampleRate, int maximumExpectedSamplesPerBlock)
 {
     // FR-005: 44.1–192 kHz, 16–4096 samples. Everything the audio thread needs is allocated here (NFR-001).
-    player.reset(*engine, nullptr);
+    player.reset(*engine, engine.get());
     scratchBlock = juce::jmax(16, maximumExpectedSamplesPerBlock);
     busScratch.assign(static_cast<size_t>(scratchBlock) * 6, 0.0f);
     player.prepare(sampleRate, scratchBlock, adapters::lagrangeResamplerFactory());
@@ -58,7 +58,7 @@ void KlayProcessor::prepareToPlay(double sampleRate, int maximumExpectedSamplesP
 
 void KlayProcessor::releaseResources()
 {
-    player.reset(*engine, nullptr);
+    player.reset(*engine, engine.get());
 }
 
 bool KlayProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
@@ -89,7 +89,7 @@ void KlayProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuf
         }
 
     if (auditionRequested.exchange(false, std::memory_order_acq_rel))
-        player.noteOn(*engine, nullptr, -1); // FR-116: untransposed
+        player.noteOn(*engine, engine.get(), -1); // FR-116: untransposed
 
     if (scratchBlock <= 0 || buffer.getNumChannels() < 2)
     {
@@ -135,7 +135,7 @@ void KlayProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuf
         const int at = juce::jlimit(0, numSamples, metadata.samplePosition);
         renderRange(position, at);
         position = at;
-        player.noteOn(*engine, nullptr, message.getNoteNumber());
+        player.noteOn(*engine, engine.get(), message.getNoteNumber());
     }
     renderRange(position, numSamples);
     midi.clear();

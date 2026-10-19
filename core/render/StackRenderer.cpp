@@ -91,7 +91,7 @@ StereoBuffer processPart(const model::Layer& layer, const StereoBuffer& sample, 
         std::copy_n(sample.channel(ch) + start, trimmed.size(), trimmed.channel(ch));
 
     if (layer.mode == model::LayerMode::stretch)
-        return stretch(trimmed, sr, layer.stretch, layer.pitchSemitones + layer.pitchCents / 100.0, preset);
+        return stretch(trimmed, sr, layer.stretch, layer.pitchSemitones + layer.pitchCents / 100.0, preset, context.resamplers);
 
     // FR-106 Repitch (PO decision 2026-10-19): the Pitch knob is greyed out; the Stretch knob sets the playback
     // speed, so a length factor s plays at speed 1/s, i.e. −12·log2(s) semitones.

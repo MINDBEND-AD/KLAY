@@ -13,6 +13,8 @@ add_library(klay_core STATIC
     dsp/Fft.h
     render/Envelope.cpp
     render/Envelope.h
+    render/KickEngine.cpp
+    render/KickEngine.h
     render/KickPlayer.cpp
     render/KickPlayer.h
     render/RenderEngine.cpp
