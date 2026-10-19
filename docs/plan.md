@@ -125,8 +125,9 @@ Reaper and FL Studio. Tag `m0-done`.
   windows-latest and picks VS 2026 or 2022 (the runner had VS 18.10, so 2026). First run green:
   https://github.com/MINDBEND-AD/KLAY/actions/runs/39215941341 (29/29 ctest, licence check, pluginval strictness 8
   SUCCESS, VST3 validator 47/0).
-- 0.9: checklist written (`docs/checks/M0.md`); the ✓ means the list exists. The PO's results in three hosts are
-  still open and are part of the M0 exit.
+- 0.9: done. The PO reported on 2026-10-19 that all steps in `docs/checks/M0.md` pass in Ableton Live, Reaper and
+  FL Studio (host versions not recorded). M0 exit is met apart from the `m0-done` tag, which the PO sets after the
+  milestone review.
 
 ## M1 Layer engine
 
