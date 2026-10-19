@@ -18,6 +18,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 include(cmake/Dependencies.cmake)
 
 add_subdirectory(core)
+add_subdirectory(adapters)
 add_subdirectory(plugin)
 
 if(KLAY_BUILD_TESTS)

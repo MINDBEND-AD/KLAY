@@ -20,7 +20,14 @@ FetchContent_Declare(Catch2
     GIT_TAG        v3.16.1
     GIT_SHALLOW    TRUE)
 
-# Signalsmith Stretch (MIT): declared and pinned now, made available in M1 (FR-104–106).
+# Signalsmith Linear (MIT): FFT/STFT used by Signalsmith Stretch. Declared here so the pin is ours, not the
+# one inside signalsmith-stretch's CMakeLists (which only declares it when the target does not exist yet).
+FetchContent_Declare(signalsmith-linear
+    GIT_REPOSITORY https://github.com/Signalsmith-Audio/linear.git
+    GIT_TAG        0.6.4
+    GIT_SHALLOW    TRUE)
+
+# Signalsmith Stretch (MIT): length change and length-preserving pitch (FR-104–106). Header-only, JUCE-free.
 FetchContent_Declare(signalsmith-stretch
     GIT_REPOSITORY https://github.com/Signalsmith-Audio/signalsmith-stretch.git
     GIT_TAG        1.4.0
@@ -32,7 +39,7 @@ FetchContent_Declare(nlohmann_json
     GIT_TAG        v3.12.0
     GIT_SHALLOW    TRUE)
 
-FetchContent_MakeAvailable(JUCE nlohmann_json)
+FetchContent_MakeAvailable(JUCE nlohmann_json signalsmith-linear signalsmith-stretch)
 
 if(KLAY_BUILD_TESTS)
     FetchContent_MakeAvailable(Catch2)

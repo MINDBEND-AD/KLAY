@@ -153,11 +153,11 @@ Reaper and FL Studio. Tag `m0-done`.
 | # | Task | IDs | Verify |
 |---|---|---|---|
 | 1.1 ✓ | `core/model`: Stack (6 layers), Layer (sample ref, fader −∞…0 dB, offset, start and end trim, pitch ±12 st ±100 ct, stretch, mode, mute, solo, lock, role, routing, pitch-follow, name, envelope), Settings; versioned JSON | FR-100, FR-101, FR-102, FR-104–106, FR-114, FR-003, NFR-012 | UT: defaults match spec, round-trip, unknown fields ignored, missing fields defaulted |
-| 1.2 | Sample loading (adapter): WAV/AIFF/FLAC to a float stereo buffer, mono to stereo, resample to session rate, on a background thread | FR-161, FR-162 (backend) | UT: each format loads; length after SR conversion; corrupt file gives an error, no crash |
-| 1.3 | Time base: note value → ms → samples from host or manual BPM (default 155, persisted); kick length; 5 ms end fade (Q8) | FR-108, FR-002 | UT: table of note values × BPMs; fade shape |
-| 1.4 | Envelope model + evaluator: points, power-curve segments (Q10), grid snap 4/8/16, Alt for free placement, absolute time, sample-accurate application | FR-280–283 (model), FR-285 | UT: snapping (Gherkin example), values at points, no discontinuity, points keep absolute time when the length changes |
-| 1.5 | Repitch behind a `Resampler` interface; JUCE LagrangeInterpolator in the adapter | FR-106 | UT: 1 kHz sine at +12 st gives 2 kHz (FFT) at half the length |
-| 1.6 | Stretch wrapper (Signalsmith): length 0.25–8×, length-preserving pitch, default and cheaper presets switchable for LT-1 | FR-104, FR-105, FR-106 | UT: output length exact; pitch of a sine within ±2 cents; level within ±1 dB |
+| 1.2 ✓ | Sample loading (adapter): WAV/AIFF/FLAC to a float stereo buffer, mono to stereo, resample to session rate, on a background thread | FR-161, FR-162 (backend) | UT: each format loads; length after SR conversion; corrupt file gives an error, no crash |
+| 1.3 ✓ | Time base: note value → ms → samples from host or manual BPM (default 155, persisted); kick length; 5 ms end fade (Q8) | FR-108, FR-002 | UT: table of note values × BPMs; fade shape |
+| 1.4 ✓ | Envelope model + evaluator: points, power-curve segments (Q10), grid snap 4/8/16, Alt for free placement, absolute time, sample-accurate application | FR-280–283 (model), FR-285 | UT: snapping (Gherkin example), values at points, no discontinuity, points keep absolute time when the length changes |
+| 1.5 ✓ | Repitch behind a `Resampler` interface; JUCE LagrangeInterpolator in the adapter | FR-106 | UT: 1 kHz sine at +12 st gives 2 kHz (FFT) at half the length |
+| 1.6 ✓ | Stretch wrapper (Signalsmith): length 0.25–8×, length-preserving pitch, default and cheaper presets switchable for LT-1 | FR-104, FR-105, FR-106 | UT: output length exact; pitch of a sine within ±2 cents; level within ±1 dB |
 | 1.7 | Stack renderer: start/end trim → stretch/repitch → offset → envelope → fader → mute/solo → buses (Main/A1/A2 × follow/fixed); kick length and end fade; autogain (Q7) | FR-102, FR-103, FR-107, FR-109, FR-110, FR-111, NFR-009 | UT: impulse offset is sample-accurate; start/end trim exact; mute/solo rules incl. "Mute beats Solo" and Shift-add; bus assignment; two renders bit-identical |
 | 1.8 | Background render thread + lock-free swap (generation counter, atomic pointer, old buffers freed off the audio thread) | FR-107, NFR-004, NFR-013 | UT stress test: edits while the audio thread reads; RT clean; BM: 12 layers, 1 beat at 150 BPM < 30 ms |
 | 1.9 | Voice + MIDI: monophonic; note-on cuts the old kick with a 5 ms fade; velocity ignored; 5 ms fade on transport stop; audition trigger API | FR-001, FR-115, FR-116 (API), FR-236 (stop fade) | UT: Gherkin "ringing kick fades within 5 ms, new one at full level"; velocity 1 and 127 give identical output; RT clean |
@@ -173,6 +173,24 @@ Reaper and FL Studio. Tag `m0-done`.
 **Exit M1:** all UT/GT/RT pass and are shown; AC-1–AC-4 results are recorded and within targets (or a deviation is
 noted for the PO); the PO confirms a hand-built kick plays in key in a DAW and records LT-1 as passed, plus the
 LT-2 and AC-5 results. Tag `m1-done`.
+
+**M1 notes and deviations (Claude Code, 2026-10-19)**
+- 1.1: JSON via nlohmann/json v3.12.0 (MIT, new row in THIRD_PARTY_LICENSES.md); the M0 `StateHeader` stub is
+  replaced by `model::Kick` (stack + settings). Fader −∞ is stored as −144 dB (JSON has no infinity).
+- 1.2–1.6 were built and committed together (one commit naming each task), since they share the CMake wiring and
+  test files.
+- 1.2: loader resamples with JUCE `WindowedSincInterpolator` (load-time quality); files over 30 s are rejected.
+- 1.4: envelope tension uses p = 8^|tension|, t^p for positive and 1 − (1 − t)^p for negative tension (both
+  power curves), so a segment is never steeper than 8× its straight line and cannot click (FR-285). A segment takes
+  the tension of its start point.
+- 1.5: Repitch primes the JUCE interpolator with its base latency at ratio 1, so Repitch adds no delay (UT).
+- 1.6 (**deviation, PO to review with LT-1/LT-2**): Signalsmith Stretch 1.4.0 meets "exact length" and "sine pitch
+  ±2 cents" for pure length changes over 0.25–8× (default preset; cheaper up to 2×), and "level ±1 dB" up to 4×
+  (default) / below 2× (cheaper); at 8× it loses up to ~3.5 dB on a sine. Its length-preserving **pitch shift** misses
+  a pure sine by up to ~8 cents (default preset, 330 Hz, −12…+12 st) and ~20 cents (cheaper). Tests bound the
+  measured values (±10 cents, ±4.5 dB) to catch regressions. If Key Track needs exact tuning, an option is pitch
+  via Signalsmith time-stretch by the ratio plus a Repitch by the same ratio (exact pitch, different artefacts).
+  Stretch uses a fixed random seed for NFR-009. Signalsmith Linear 0.6.4 (MIT) is pinned and listed as its own row.
 
 ## M2 Library + randomizer
 

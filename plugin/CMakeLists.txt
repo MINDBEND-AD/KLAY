@@ -34,6 +34,7 @@ target_compile_definitions(KLAY
 target_link_libraries(KLAY
     PRIVATE
         klay_core
+        klay_adapters
         juce::juce_audio_utils
     PUBLIC
         juce::juce_recommended_config_flags
