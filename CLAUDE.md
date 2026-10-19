@@ -1,7 +1,7 @@
 # KLAY — project rules for Claude Code
 
 KLAY is a layer-based kick drum VST3 instrument (sample player in v1). The full
-requirements live in `docs/spec.md` (v0.7); wireframes are in `docs/wireframes/`.
+requirements live in `docs/spec.md` (v0.8); wireframes are in `docs/wireframes/`.
 The build order and task breakdown live in `docs/plan.md` once it exists.
 
 ## How to work

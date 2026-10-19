@@ -4,7 +4,7 @@ Oct 19, 2026 · @Bernard
 
 ## 1. Document control & purpose
 
-This is version 0.7 (draft) of the requirements and specification for KLAY (working title), a layer-based kick drum plugin inspired by a commercial layer-based kick plugin. Its job is to give the coding session a single, testable source of truth.
+This is version 0.8 (draft) of the requirements and specification for KLAY (working title), a layer-based kick drum plugin inspired by a commercial layer-based kick plugin. Its job is to give the coding session a single, testable source of truth.
 
 - **Scope:** a VST3 instrument plugin for Windows that stacks sample layers into a kick, processes it through a modular FX rack, and exports the result. Version 1 is a pure sample player with no genre style targets.
 - **Out of scope (v1):** synthesis (planned for version 2), genre style targets, macOS / AU / AAX, standalone app, copy protection and licensing, distribution, stem export (version 2), sequencing.
@@ -31,7 +31,7 @@ A producer should get from an empty layer to a club-ready, in-key techno kick in
 
 ## 3. Reference product
 
-KLAY is inspired by a commercial layer-based kick plugin. The detailed analysis of that product is kept in a separate private document, because this spec is published with the source code.
+KLAY is inspired by a commercial layer-based kick plugin. The detailed analysis of that product (features, wording, pricing) is kept in a separate private document, because this spec is published with the source code. KLAY's UI wording was checked against it in v0.7 (decision log).
 
 ## 4. Users, personas & key use cases
 
@@ -683,6 +683,7 @@ These need answers before or during the first coding session.
 | 2026-10-19 | Visual design: Forge theme (gunmetal + bronze, ember as the only active and glowing colour, standard bloom, temper-scale meters), white layer names; Kick page mock is the design reference (UI-020 to UI-029). Library preview on single click, switchable in Settings. Collapsed library becomes a rail; a role button expands it at that role. Stretch / Repitch switch sits below the Pitch knob. Layer-card knob design to be revisited in M3; document version 0.5 | Product owner decisions from the UI design review |
 | 2026-10-19 | One layer knob with a three-way mode switch (Stretch: length only · Pitch: pitch only · Repitch: tape-style, both together), default Stretch; replaces the separate Pitch and Stretch knobs (FR-104–106, UI-007, UI-019). Implemented in the second pass of M1, since M1 is running on v0.4. Render in place on the card planned for version 2 (FR-117); document version 0.6 | Product owner decision; the v0.5 mock showed two knobs plus a switch were redundant, and one transform per layer keeps the card simple |
 | 2026-10-19 | UI wording changed to stay clear of the reference product's feature names: Drag Master → Export all; Drag Stems → Export layer; Randomize All → Forge; per-layer roll → Reforge; layer modes Stretch / Pitch / Repitch → Length / Pitch / Tape; Finalizer → Temper; Equalizer → EQ; Multiband → Split Dynamics; Convolver → Space; “restore or reset on launch” → “on open: last session or empty kick”; OUT → MASTER; window sizes XS–XL → 75–200 %; chain lock is icon-only; “part” → “layer”/“sample” in the UI. Kept: Key Track, pitch-follow (P), Clip, Crunch. Earlier rows keep the old names; document version 0.7 | Product owner decisions from the wording review against the reference product; lowers trademark and look-alike risk (section 11) |
+| 2026-10-19 | Section 3 (reference product analysis) moved to a private document; the spec keeps a one-line pointer and the section number. Document version 0.8 | Product owner decision; the spec is published with the AGPL source, the competitor analysis should not be |
 
 ### Sources
 
