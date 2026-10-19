@@ -213,7 +213,7 @@ LT-2 and AC-5 results. Tag `m1-done`.
   in LT-2; (2) the renderer compensates the stretch level loss: `render::stretch` scales its output to the input RMS
   (an ideal time-stretch keeps the mean square), so level is within ±1 dB at every factor and preset (UT tightened);
   (3) Stretch knob in Repitch mode: question rephrased, open; (4) factory samples go to the staging folder
-  `C:devKLAY-samples` (outside the public repo), one sub-folder per layer role: Kick, Rumble, Drive, Crunch,
+  `C:\dev\KLAY-samples\` (outside the public repo), one sub-folder per layer role: Kick, Rumble, Drive, Crunch,
   Transient, Texture.
 - Session stop (2026-10-19): 1.12 (cache part), 1.14–1.17 are open; status, open PO decisions and the verified
   build/ctest/pluginval results are in `docs/checks/M1.md`. 1.12 is not ticked: the real-time Repitch fallback and
