@@ -212,7 +212,10 @@ LT-2 and AC-5 results. Tag `m1-done`.
 - PO decisions 2026-10-19 (after the M1 session stop): (1) Signalsmith pitch-shift accuracy accepted as is, judged
   in LT-2; (2) the renderer compensates the stretch level loss: `render::stretch` scales its output to the input RMS
   (an ideal time-stretch keeps the mean square), so level is within ±1 dB at every factor and preset (UT tightened);
-  (3) Stretch knob in Repitch mode: question rephrased, open; (4) factory samples go to the staging folder
+  (3) Repitch mode (FR-106): default mode is Stretch; in Repitch mode the Pitch knob is greyed out, so the Stretch
+  knob is the varispeed control (length and pitch change together; Claude Code's reading, to confirm with the spec
+  update). The renderer still uses the Pitch knob as varispeed and must follow when M1 resumes. FR-106 and UI-007
+  need this wording in the spec (Claude Docs v0.4, then re-export), and the wireframes lack the mode switch (see M3); (4) factory samples go to the staging folder
   `C:\dev\KLAY-samples\` (outside the public repo), one sub-folder per layer role: Kick, Rumble, Drive, Crunch,
   Transient, Texture.
 - Session stop (2026-10-19): 1.12 (cache part), 1.14–1.17 are open; status, open PO decisions and the verified
@@ -246,6 +249,10 @@ dev editor with the factory library per `docs/checks/M2.md`. Tag `m2-done`.
 | 3.6 | Envelope editor overlay (logic in a JUCE-free class) | FR-280–284, FR-286, FR-239 | UT on add/remove/drag/bend/snap/Alt; PO |
 | 3.7 | Settings menu: every UI-017 item (oversampling and Mono slope stored now, active in M4), roll template, key layer, BPM, on launch, window size, autogain switch (decision 7); Mono slope default 12 dB/oct | UI-017, FR-124, FR-146, FR-244 | UT: settings persist and are undoable; PO against the settings wireframe |
 | 3.8 | Remove the dev editor; PV with the real editor | NFR-011 | PV |
+
+**Before starting M3 (PO note, 2026-10-19):** the current wireframes and UI-007 have no per-layer Stretch/Repitch
+mode switch (FR-106). Add it to the layer card mock-up and UI-007 first, including the Repitch behaviour from the
+2026-10-19 decision (Pitch knob greyed out in Repitch mode; default mode Stretch). Check with the PO before 3.4.
 
 **Exit M3:** all UT/RT/PV pass and are shown; the PO signs off UI-001–UI-007 and UI-017 against the wireframes and
 re-runs UC-1 and UC-2 on the real UI per `docs/checks/M3.md`. Tag `m3-done`.
