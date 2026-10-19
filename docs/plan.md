@@ -120,6 +120,12 @@ Reaper and FL Studio. Tag `m0-done`.
   `build/vst3-validator`); pluginval is downloaded per run-machine to `tools/bin/` and SHA-256 checked (GitHub
   publishes no digest for v1.0.4, so the hash is pinned on first download). The validator found the unnamed default
   program; it is now called "Default".
+- 0.8: open. `.github/workflows/ci.yml` is written (windows-latest; detects VS 2026 or 2022 because the runner image
+  may lack VS 2026). Creating `MINDBEND-AD/KLAY` was approved on 2026-10-19, but the push is on hold at the PO's
+  request: every commit carries the PO's personal email as author, and history must not be rewritten without the
+  PO's decision. Green CI run still to be shown.
+- 0.9: checklist written (`docs/checks/M0.md`); the ✓ means the list exists. The PO's results in three hosts are
+  still open and are part of the M0 exit.
 
 ## M1 Layer engine
 
