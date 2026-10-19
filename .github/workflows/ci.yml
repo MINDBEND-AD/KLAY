@@ -24,10 +24,14 @@ jobs:
     name: Windows x64 (MSVC)
     runs-on: windows-latest
     timeout-minutes: 90
+    env:
+      # Timing targets (NFR-002, NFR-004, NFR-015) are defined for the reference machine: on CI they are reported, not
+      # enforced (tests/TimingGate.h, spec §12). Everything else in ctest stays a hard gate.
+      KLAY_CI: '1'
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # Local builds use the vs2026 preset; the runner image may only have VS 2022, so pick what is installed.
       - name: Detect Visual Studio
@@ -50,6 +54,17 @@ jobs:
       - name: Test (ctest, includes RT harness and C-006 licence check)
         run: ctest --test-dir build -C Release --output-on-failure
 
+      # Benchmarks and assumption checks, report only: prints the measured numbers (NFR-004 re-render, AC-1 to AC-4)
+      # to the log. Never fails the run; the same tests inside ctest above only warn on CI.
+      - name: Benchmarks (report only, NFR-004, NFR-015, AC-1 to AC-4)
+        if: success() || failure()
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          ./build/tests/Release/klay_core_tests.exe "[bm]"
+          ./build/tests/Release/klay_tests.exe "[bm]"
+          exit 0
+
       - name: Licence check (C-006)
         shell: pwsh
         run: ./tools/check-licenses.ps1
@@ -60,7 +75,7 @@ jobs:
 
       - name: Upload plugin
         if: success()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Klaymore-vst3-${{ github.sha }}
           path: build/plugin/KLAY_artefacts/Release/VST3/Klaymore.vst3

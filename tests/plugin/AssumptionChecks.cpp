@@ -2,13 +2,16 @@
 // LICENSE-GPL: KLAY own source, uses JUCE (AGPLv3). See THIRD_PARTY_LICENSES.md (C-006).
 //
 // Assumption checks AC-1–AC-4 (spec §12, task 1.16). Each test prints its measurements (WARN) and checks the target
-// it confirms. Results are copied into docs/checks/M1.md. Run alone: klay_tests "[bm]" -s
+// it confirms. Timing targets (AC-2, AC-3) are enforced locally and only reported on CI (tests/TimingGate.h);
+// AC-1 (RAM) and AC-4 (latency) are deterministic and always enforced.
+// Results are copied into docs/checks/M1.md. Run alone: klay_tests "[bm]" -s
 #include "adapters/JuceResampler.h"
 #include "adapters/SampleLoader.h"
 #include "core/render/KickEngine.h"
 #include "core/render/TimeBase.h"
 #include "plugin/KickFiles.h"
 #include "plugin/PluginProcessor.h"
+#include "tests/TimingGate.h"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -134,8 +137,8 @@ TEST_CASE("AC-2: transposition cache build time", "[bm][AC-2][NFR-015]")
         report += line;
     }
     WARN(report);
-    CHECK(worst2 < 100.0);
-    CHECK(worst12 < 1000.0);
+    KLAY_TIMING_CHECK(worst2 < 100.0, "AC-2 root +-2 took " << worst2 << " ms, target < 100 ms");
+    KLAY_TIMING_CHECK(worst12 < 1000.0, "AC-2 root +-12 took " << worst12 << " ms, target < 1000 ms");
 }
 
 // AC-3 playback CPU (NFR-002 partial: no FX chains in M1): 48 kHz / 128-sample blocks, a kick every 400 ms, played
@@ -178,8 +181,8 @@ TEST_CASE("AC-3: playback CPU, cached and fallback notes", "[bm][AC-3][NFR-002]"
     const double fallbackCpu = measure(false);
     WARN("AC-3 playback CPU at 48 kHz / 128, 3 follow buses + fixed: cached " << cachedCpu << " %, Repitch fallback "
          << fallbackCpu << " % of one core (NFR-002 budget for the whole plugin: 5 %)");
-    CHECK(cachedCpu < 1.0);
-    CHECK(fallbackCpu < 1.0);
+    KLAY_TIMING_CHECK(cachedCpu < 1.0, "AC-3 cached playback " << cachedCpu << " % of a core, target < 1 %");
+    KLAY_TIMING_CHECK(fallbackCpu < 1.0, "AC-3 fallback playback " << fallbackCpu << " % of a core, target < 1 %");
 }
 
 // AC-4 latency (FR-125, NFR-003): through the processor, a note-on at sample 37 gives the first output sample at 37,

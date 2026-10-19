@@ -399,3 +399,7 @@ Won't (v1): FR-261, FR-307, FR-308, FR-326, FR-334, C-003, C-004.
 
 ## Deviations log
 (Filled in during the build: date, task, deviation, reason, PO approval.)
+
+| Date | Task | Deviation | Reason | PO approval |
+| --- | --- | --- | --- | --- |
+| 2026-10-19 | 1.8, 1.16 (CI) | Timing targets (NFR-004 re-render, NFR-015 cache build via AC-2, NFR-002 playback via AC-3) are enforced locally only, on the reference machine. CI sets `KLAY_CI=1`: those checks print their numbers and warn when over target but do not fail (`tests/TimingGate.h`); a non-blocking CI step runs the `[bm]` tests so the numbers are in the log. AC-1 (RAM) and AC-4 (latency) stay hard gates everywhere | The first CI runs of M1 (39253172615, 39271836490) failed only on AC-2 with 3 follow buses: root ±2 took 100.2 and 108 ms on the shared runner against 100 ms (46 ms on the dev machine). The targets are defined for the reference machine, and spec §12 puts performance checks in a benchmark harness | PO, 2026-10-19 |

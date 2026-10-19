@@ -3,6 +3,7 @@
 #include "core/render/RenderEngine.h"
 #include "core/render/TimeBase.h"
 #include "tests/core/TestSignals.h"
+#include "tests/TimingGate.h"
 #include "tests/rt/RtHarness.h"
 
 #include <catch2/catch_approx.hpp>
@@ -372,7 +373,7 @@ TEST_CASE("Benchmark: re-render of 12 layers after an edit", "[core][render][bm]
         worstMs = std::max(worstMs, std::chrono::duration<double, std::milli>(clock::now() - t0).count());
     }
     WARN("NFR-004: re-render after an edit, worst of 10: " << worstMs << " ms (target < 30 ms); cold render: " << coldMs << " ms");
-    CHECK(worstMs < 30.0);
+    KLAY_TIMING_CHECK(worstMs < 30.0, "NFR-004 re-render " << worstMs << " ms, target < 30 ms");
 }
 
 // FR-104–106 (spec v0.10, task 1.20): one knob, three modes; only the active mode's value is applied.
