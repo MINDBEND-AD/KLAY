@@ -144,7 +144,7 @@ int listening(const juce::StringArray& args)
         const double reference = rms(part.audio);
         const auto base = part.role + "/" + part.name;
 
-        // LT-1: 5 ratios × 2 presets + unprocessed and Repitch references.
+        // LT-1: 5 ratios × 2 presets + unprocessed and Tape (varispeed) references.
         const auto lt1 = outDir.getChildFile("LT-1").getChildFile(base);
         writeWav(lt1.getChildFile("ref_original.wav"), part.audio, sr, 24);
         ++files;
@@ -155,7 +155,7 @@ int listening(const juce::StringArray& args)
             const auto cheap = lt1.getChildFile("stretch_cheaper_" + rName + ".wav");
             writeWav(def, matched(render::stretch(part.audio, sr, ratio, 0.0, model::StretchPreset::standard), reference), sr, 24);
             writeWav(cheap, matched(render::stretch(part.audio, sr, ratio, 0.0, model::StretchPreset::cheaper), reference), sr, 24);
-            writeWav(lt1.getChildFile("ref_repitch_" + rName + ".wav"),
+            writeWav(lt1.getChildFile("ref_tape_" + rName + ".wav"),
                      matched(render::repitch(part.audio, -12.0 * std::log2(ratio), resamplers), reference), sr, 24);
             files += 3;
             blindPair(outDir.getChildFile("LT-1").getChildFile("blind"), part.role + "_" + part.name + "_" + rName, def, cheap,

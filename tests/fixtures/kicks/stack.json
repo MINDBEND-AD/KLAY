@@ -1,12 +1,12 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "settings": { "kickLength": "1/4", "manualBpm": 140.0, "autogain": true },
   "layers": [
     { "name": "Kick", "role": "kick", "sample": "samples/body.wav", "pitchFollow": true },
     { "name": "Rumble", "role": "rumble", "sample": "samples/rumble.wav", "routing": "aux1", "offsetMs": 20.0, "faderDb": -6.0,
       "envelope": { "points": [ { "timeMs": 0.0, "gain": 0.0, "tension": 0.0 }, { "timeMs": 60.0, "gain": 1.0, "tension": -0.5 }, { "timeMs": 400.0, "gain": 0.2, "tension": 0.0 } ] } },
     { "name": "Drive", "role": "drive" },
-    { "name": "Crunch", "role": "crunch", "sample": "samples/crunch.wav", "stretch": 1.5, "pitchSemitones": -3, "pitchCents": 20,
+    { "name": "Crunch", "role": "crunch", "sample": "samples/crunch.wav", "mode": "length", "length": 1.5, "pitchSemitones": -3, "pitchCents": 20,
       "startTrimMs": 5.0, "offsetMs": 35.0, "faderDb": -3.0, "pitchFollow": true },
     { "name": "Transient", "role": "transient", "sample": "samples/transient.wav", "routing": "aux2" },
     { "name": "Texture", "role": "texture", "sample": "samples/transient.wav", "mute": true }

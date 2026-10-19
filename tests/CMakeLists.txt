@@ -140,3 +140,12 @@ add_test(NAME "listening material generator runs on the fixture parts"
 set_tests_properties("listening material generator runs on the fixture parts" PROPERTIES
     PASS_REGULAR_EXPRESSION "listening material: 4 parts, 136 files"
     FAIL_REGULAR_EXPRESSION "cannot write")
+
+# Task 1.21 (NFR-012): spec v0.4 kicks (schema 1) still render identically through the migration.
+foreach(kick stack repitch)
+    add_test(NAME "golden: schema 1 ${kick} kick migrates and nulls"
+        COMMAND klay_render_cli render
+                --kick ${CMAKE_CURRENT_SOURCE_DIR}/fixtures/kicks/v1/${kick}.json
+                --out ${CMAKE_CURRENT_BINARY_DIR}/golden-v1-${kick}.wav --sr 48000
+                --compare ${CMAKE_CURRENT_SOURCE_DIR}/fixtures/kicks/golden/${kick}.wav)
+endforeach()

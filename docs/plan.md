@@ -261,7 +261,7 @@ The spec contradictions C1–C6 (below) were resolved by the PO the same day: pr
 | 1.18 ✓ | Model: `LayerMode` becomes `length` / `pitch` / `tape` (default `length`); a layer stores one value per mode (length factor 0.25–8×, pitch st + ct, tape speed 0.25–8×) and applies only the active one; `schemaVersion` 2 | FR-104–106, FR-100 | UT: defaults; each mode's value kept across mode switches; round-trip; ranges clamped |
 | 1.19 ✓ | JSON migration v1 → v2 (Q-B): old `stretch` / `pitch` / `mode` fields map to the new per-mode values and active mode; unknown fields still ignored | NFR-012, FR-003 | UT: v1 fixtures (Stretch with length only, pitch only, both; Repitch) load to the agreed v2 kick; a v2 file round-trips |
 | 1.20 ✓ | Renderer: `processPart` applies only the active mode — Length: Signalsmith length change; Pitch: exact-pitch shift at 1× (time-stretch + Repitch, as the cache); Tape: Lagrange varispeed at the tape speed (Q-A). Processed-part cache key and key detection follow the active mode | FR-104–106, FR-107, FR-120 | UT per mode: length exact, pitch of a sine ±2 ct, Tape speed → length and pitch together; inactive values have no effect; render bit-identical across runs |
-| 1.21 | Fixtures and goldens: the three fixture kicks move to schema 2 (`stack.json` used Stretch + Pitch on one layer, so it changes), goldens regenerated on purpose and committed with the reason; render-cli `listening` file names use "tape" for the varispeed references | §12, NFR-009 | GT: 3 kicks null at −120 dBFS against the new goldens; the two must-fail checks still fail; a v1 kick JSON renders through the migration |
+| 1.21 ✓ | Fixtures and goldens: the three fixture kicks move to schema 2 (`stack.json` used Stretch + Pitch on one layer, so it changes), goldens regenerated on purpose and committed with the reason; render-cli `listening` file names use "tape" for the varispeed references | §12, NFR-009 | GT: 3 kicks null at −120 dBFS against the new goldens; the two must-fail checks still fail; a v1 kick JSON renders through the migration |
 | 1.22 | Dev editor: one knob per layer with a Length · Pitch · Tape switch below it; label, range and readout follow the mode (Length 0.25–8×, Pitch ±12 st ±100 ct, Speed 0.25–8× with the resulting pitch); log travel in Length and Tape; "sample" instead of "part" in its text (v0.7 wording) | FR-106, UI-007, UI-019 (dev editor only) | UT: editor opens with each mode; PO: switch modes on a layer, each keeps its value and only the active one is heard |
 | 1.23 | Plan wording to v0.9 for the later milestones: Forge / Reforge (2.3, 2.7), Export all (M5), Temper / EQ (M4), task 3.4 uses the one layer knob, window sizes 75–200 % (3.1); no code | — | Review |
 | 1.24 | Full re-run: build, `ctest`, `validate.ps1` (pluginval strictness 8 + VST3 validator), CI green; PO re-checks 1.22 and steps 1.2–1.5 of `docs/checks/M1.md` in one DAW | NFR-011 | Shown passing; PO |
@@ -273,6 +273,11 @@ The spec contradictions C1–C6 (below) were resolved by the PO the same day: pr
   editor's status line. The processed-part cache key holds only the active mode's value. The `stack` golden was
   regenerated on purpose: its Crunch layer had a length and a pitch change, and only Length applies now; the
   `punch` and `repitch` goldens null unchanged through the migration.
+- 1.21: the fixture kicks are schema 2 now; they null against the goldens without regeneration. The spec v0.4
+  versions live in `tests/fixtures/kicks/v1/` with ctests that render them through the migration (same goldens).
+  render-cli `listening` names the varispeed references `ref_tape_<r>x`. Also repaired the Windows paths in
+  `docs/checks/M1.md` (backslashes lost when the steps were written; the render-cli line had picked up a tab and a
+  carriage return).
 
 **Questions, answered by the PO on 2026-10-19 (all proposals accepted)**
 - **Q-A Tape value:** UI-007 labels the Tape knob "Speed 0.25–8×", FR-106 says "0.25–8×". Decision: the stored value is

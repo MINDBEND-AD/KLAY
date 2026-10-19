@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "settings": { "kickLength": "1/4", "manualBpm": 150.0, "autogain": true },
   "layers": [
     { "name": "Kick", "role": "kick", "sample": "samples/body.wav",
