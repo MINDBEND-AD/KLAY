@@ -96,7 +96,7 @@ interfaces implemented in `adapters/`) · `plugin/` · `ui/` · `tools/render-cl
 | 0.6 ✓ | License check `tools/check-licenses.ps1`: GPL-family SPDX without the `LICENSE-GPL` marker, or missing from THIRD_PARTY_LICENSES.md, fails; runs as a ctest | C-006 | UT: an unmarked fixture file fails, the real tree passes |
 | 0.7 ✓ | `tools/validate.ps1`: pluginval (pinned) strictness 8 + VST3 validator on the built plugin | NFR-011 | PV passes, output shown |
 | 0.8 | Public GitHub repo (PO go-ahead before creating it; prerequisites in decision 3) + GitHub Actions workflow (windows, MSVC): configure, build, ctest, license check, PV | §10 | Green CI run shown |
-| 0.9 | `docs/checks/M0.md`: load, play and close in Ableton Live, Reaper, FL Studio | FR-007 (partial) | PO |
+| 0.9 ✓ | `docs/checks/M0.md`: load, play and close in Ableton Live, Reaper, FL Studio | FR-007 (partial) | PO |
 
 **Exit M0:** the Release build, `ctest` (including the RT and license checks) and `validate.ps1` (pluginval
 strictness 8 + VST3 validator) are shown passing; CI is green; the PO confirms the plugin loads in Ableton Live,

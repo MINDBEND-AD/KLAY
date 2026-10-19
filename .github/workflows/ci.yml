@@ -1,0 +1,67 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# LICENSE-GPL: KLAY own source. See THIRD_PARTY_LICENSES.md (C-006).
+#
+# CI (spec §10, plan task 0.8): Windows x64 / MSVC - configure, build, ctest (unit, RT harness, C-006 licence
+# check), plugin validation (pluginval strictness 8 + Steinberg VST3 validator, NFR-011).
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['*']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    name: Windows x64 (MSVC)
+    runs-on: windows-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Local builds use the vs2026 preset; the runner image may only have VS 2022, so pick what is installed.
+      - name: Detect Visual Studio
+        id: vs
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $version = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationVersion
+          $major = [int]($version.Split('.')[0])
+          $generator = switch ($major) { 18 { 'Visual Studio 18 2026' } 17 { 'Visual Studio 17 2022' } default { throw "Unsupported Visual Studio $version" } }
+          "Visual Studio $version -> $generator"
+          "generator=$generator" >> $env:GITHUB_OUTPUT
+
+      - name: Configure
+        run: cmake -S . -B build -G "${{ steps.vs.outputs.generator }}" -A x64
+
+      - name: Build (Release)
+        run: cmake --build build --config Release --parallel
+
+      - name: Test (ctest, includes RT harness and C-006 licence check)
+        run: ctest --test-dir build -C Release --output-on-failure
+
+      - name: Licence check (C-006)
+        shell: pwsh
+        run: ./tools/check-licenses.ps1
+
+      - name: Plugin validation (pluginval strictness 8 + VST3 validator)
+        shell: pwsh
+        run: ./tools/validate.ps1 -Config Release -Strictness 8 -Generator "${{ steps.vs.outputs.generator }}"
+
+      - name: Upload plugin
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Klaymore-vst3-${{ github.sha }}
+          path: build/plugin/KLAY_artefacts/Release/VST3/Klaymore.vst3
+          retention-days: 14

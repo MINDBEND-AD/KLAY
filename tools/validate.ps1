@@ -18,6 +18,9 @@
 .PARAMETER Strictness
     pluginval strictness level, 8 or higher (default 8).
 
+.PARAMETER Generator
+    CMake generator for building the VST3 validator (default 'Visual Studio 18 2026'; CI passes what it detected).
+
 .PARAMETER SkipGuiTests
     Pass --skip-gui-tests to pluginval (for headless machines).
 #>
@@ -25,7 +28,8 @@ param(
     [string] $Config = 'Release',
     [string] $Plugin = '',
     [ValidateRange(8, 10)] [int] $Strictness = 8,
-    [switch] $SkipGuiTests
+    [switch] $SkipGuiTests,
+    [string] $Generator = 'Visual Studio 18 2026'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -86,7 +90,7 @@ $validatorBuild = Join-Path $repo 'build/vst3-validator'
 $validatorExe = Join-Path $validatorBuild 'bin/Release/validator.exe'
 if (-not (Test-Path -LiteralPath $validatorExe)) {
     Write-Output 'Building the VST3 validator from the pinned VST3 SDK ...'
-    & cmake -S (Join-Path $repo 'tools/vst3-validator') -B $validatorBuild -G 'Visual Studio 18 2026' -A x64 | Out-Null
+    & cmake -S (Join-Path $repo 'tools/vst3-validator') -B $validatorBuild -G $Generator -A x64 | Out-Null
     if ($LASTEXITCODE -ne 0) { Write-Output 'ERROR: configuring the VST3 validator failed'; exit 2 }
     & cmake --build $validatorBuild --config Release --target validator -- /m /v:minimal | Out-Null
     if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $validatorExe)) {
