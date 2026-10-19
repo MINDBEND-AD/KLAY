@@ -1,0 +1,23 @@
+# Build output
+/build/
+/out/
+/.vs/
+CMakeUserPresets.json
+*.user
+*.suo
+
+# Tool downloads (pluginval, VST3 validator)
+/tools/bin/
+
+# Test and render artefacts
+/tests/output/
+*.log
+
+# OS / editor
+Thumbs.db
+.DS_Store
+.vscode/
+.idea/
+
+# Claude Code local settings
+/.claude/settings.local.json

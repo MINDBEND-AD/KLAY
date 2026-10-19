@@ -88,7 +88,7 @@ interfaces implemented in `adapters/`) · `plugin/` · `ui/` · `tools/render-cl
 
 | # | Task | IDs | Verify |
 |---|---|---|---|
-| 0.1 | Repo files: .gitignore, .gitattributes, README, LICENSE (AGPL-3.0), THIRD_PARTY_LICENSES.md (JUCE, VST3 SDK, Signalsmith, Catch2), folder layout | C-006, C-007 | Review |
+| 0.1 ✓ | Repo files: .gitignore, .gitattributes, README, LICENSE (AGPL-3.0), THIRD_PARTY_LICENSES.md (JUCE, VST3 SDK, Signalsmith, Catch2), folder layout | C-006, C-007 | Review |
 | 0.2 | CMake + CMakePresets (VS 2026 x64, Debug/Release); FetchContent pins; targets `klay_core` (static, no JUCE), `KLAY` (juce_add_plugin, VST3 only, synth, MIDI in, stereo out; identity per decision 4), `klay_tests` | C-001, C-002 | Clean configure + build produces `Klaymore.vst3`; host shows "Klaymore" by "MINDBEND AD" |
 | 0.3 | Empty AudioProcessor: silence out, accepts 44.1–192 kHz and 16–4096 blocks; empty editor showing name + version; state stub with `schemaVersion` | C-001, FR-005, FR-003 (stub) | UT: process at every SR × block-size combination, no crash, silent output; state round-trip |
 | 0.4 | Test harness: Catch2 under ctest; JUCE-free core test plus a processor smoke test | §12 | `ctest` passes |
@@ -101,6 +101,13 @@ interfaces implemented in `adapters/`) · `plugin/` · `ui/` · `tools/render-cl
 **Exit M0:** the Release build, `ctest` (including the RT and license checks) and `validate.ps1` (pluginval
 strictness 8 + VST3 validator) are shown passing; CI is green; the PO confirms the plugin loads in Ableton Live,
 Reaper and FL Studio. Tag `m0-done`.
+
+**M0 notes and deviations (Claude Code, 2026-10-19)**
+- Ticked tasks are marked `✓` in the # column.
+- 0.1: own source files carry `SPDX-License-Identifier: AGPL-3.0-only` plus the `LICENSE-GPL` marker, since the
+  whole plugin is AGPL through JUCE; THIRD_PARTY_LICENSES.md has a "KLAY own source" row so the C-006 check covers
+  them. Pins: JUCE 8.0.16-security (JUCE 9 exists, but the fixed decision is JUCE 8), Catch2 v3.16.1, Signalsmith
+  Stretch 1.4.0 (declared now, fetched from M1), VST3 SDK v3.8.0_build_66 (validator only), pluginval v1.0.4.
 
 ## M1 Layer engine
 
