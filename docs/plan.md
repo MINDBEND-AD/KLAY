@@ -252,7 +252,8 @@ LT-2 and AC-5 results. Tag `m1-done`.
 M1 was built and accepted on spec v0.4 (two knobs, Pitch + Stretch, plus a Stretch/Repitch mode). Spec v0.6–v0.9
 replace that with one layer knob and a three-way mode switch (FR-104–106, UI-007, UI-019; decision log rows v0.6 and
 v0.7). Only the active mode is applied, each mode keeps its own value, default mode Length. This pass brings the M1
-code to v0.9 before M2 starts. Draft for PO review (2026-10-19); open questions below the table.
+code to v0.9 before M2 starts. Reviewed by the PO on 2026-10-19: the proposals for Q-A to Q-D below are accepted.
+Before 1.18 starts, the spec contradictions C1–C6 (below) need a PO answer; C1 affects 1.18, 1.20 and 1.22.
 
 | # | Task | IDs | Verify |
 |---|---|---|---|
@@ -264,17 +265,36 @@ code to v0.9 before M2 starts. Draft for PO review (2026-10-19); open questions 
 | 1.23 | Plan wording to v0.9 for the later milestones: Forge / Reforge (2.3, 2.7), Export all (M5), Temper / EQ (M4), task 3.4 uses the one layer knob, window sizes 75–200 % (3.1); no code | — | Review |
 | 1.24 | Full re-run: build, `ctest`, `validate.ps1` (pluginval strictness 8 + VST3 validator), CI green; PO re-checks 1.22 and steps 1.2–1.5 of `docs/checks/M1.md` in one DAW | NFR-011 | Shown passing; PO |
 
-**Open questions for the review**
-- **Q-A Tape value:** UI-007 labels the Tape knob "Speed 0.25–8×", FR-106 says "0.25–8×". Proposal: the stored value is
+**Questions, answered by the PO on 2026-10-19 (all proposals accepted)**
+- **Q-A Tape value:** UI-007 labels the Tape knob "Speed 0.25–8×", FR-106 says "0.25–8×". Decision: the stored value is
   the speed (2× = one octave up and half the length), the readout shows the resulting pitch (−24…+36 st). The current
   M1 code instead treats the Stretch knob as a length factor in Repitch mode (2× = twice as long, one octave down).
+  The Kick page mock does the same as the M1 code (see C1).
 - **Q-B Migration of v1 kicks:** a v1 layer in Stretch mode could have both a length change and a pitch change; v2
-  applies only one. Proposal: keep both values in their modes (nothing is lost) and make Length active if its factor
+  applies only one. Decision: keep both values in their modes (nothing is lost) and make Length active if its factor
   is not 1×, else Pitch if the pitch is not 0, else Length; a v1 Repitch layer becomes Tape with speed = 1 / old
   stretch. Such a kick then sounds different from v1 (only one transform applied); the loader reports it once.
 - **Q-C Undo:** FR-106 makes a mode switch one undo step; the undo manager arrives in M2 (2.5), which will cover it.
 - **Q-D Key Track and Tape:** Tape changes the pitch of a pitch-following layer before Key Track; key detection on the
-  key layer uses its processed (active-mode) sample, as now. Confirm that this is the intended order.
+  key layer uses its processed (active-mode) sample, as now. Decision: this order.
+
+**Spec v0.9 contradictions found in the review (2026-10-19), open for the PO**
+
+Only real conflicts are listed; text that v0.9 replaced or added is taken as is.
+
+| # | Conflict | Where | Proposed resolution |
+| --- | --- | --- | --- |
+| C1 | Tape knob value. The Kick page mock (the spec's design reference, §8) computes the Tape "Speed" value as a length factor: Speed 2.00× gives length 2× and −12 st. Q-A (accepted) and the label "Speed" mean the opposite: 2× = twice as fast, half the length, +12 st | UI-007, FR-106, the mock, Q-A | Keep Q-A (a speed); fix the mock's readout and state "speed" in FR-106. Or keep the mock and rename the value to a length factor |
+| C2 | How Pitch mode and the Key Track cache shift pitch. §10 says the cache renders ±12 "with Signalsmith Stretch", FR-104 and FR-106 (Pitch) say "Signalsmith Stretch", and AC-5 calls the cached hit "Signalsmith"; the 2026-10-19 LT-1/LT-2 decision row and the M1 code use a Signalsmith time-stretch by the pitch ratio plus a Lagrange Repitch back to length (Signalsmith's own shift was 45 cents sharp at 43.65 Hz) | §10, FR-104, FR-106, §12 AC-5 vs decision log | Reword FR-104, FR-106 (Pitch) and §10: "Signalsmith time-stretch + JUCE Lagrange Repitch, exact pitch within about ±24 st; Signalsmith's own shift beyond" |
+| C3 | Per-mode values. FR-106 states "each mode keeps its own value" as a Must, while §14 still lists "confirm that each mode keeps its own value" as an open question (and the mock as "still open") | §14 open questions, FR-106 | Tick the §14 item as decided (you accepted it with 1.18) |
+| C4 | Priorities. UI-017 (Must) lists "on open: last session or empty kick" and "library preview", whose own requirements are FR-244 (Could) and UI-024 (Should) | UI-017 vs FR-244, UI-024 | Add to UI-017: "each setting ships with the priority of its own requirement" |
+| C5 | Empty-card button name. UI-022 says an empty card shows "a Roll button"; the v0.7 wording says per-layer roll → Reforge and UI-007 uses ↻ reforge; the mock's empty card says "Forge a Transient" | UI-022, UI-007, the mock | Name it "Reforge" in UI-022 and the mock |
+| C6 | Window size naming. UI-026 calls 1180 × 760 "window size M", but v0.7 replaced the XS–XL sizes with 75–200 % (UI-013) | UI-026 vs UI-013 | UI-026: "the 100 % size is 1180 × 760 px" |
+
+Minor (no conflict, cleanup when the spec is next edited): the §14 checklist line still says "Equalizer, Finalizer";
+the Kick page wireframe predates the one-knob card (the mock carries it, §8 says the wireframes show layout only); the
+glossary's Layer entry still lists "pitch, stretch" as two values; the Distortion module also has a mode named "Tape",
+which may be confused with the layer's Tape mode in UI text and docs.
 
 ## M2 Library + randomizer
 
