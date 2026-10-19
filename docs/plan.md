@@ -109,7 +109,8 @@ Reaper and FL Studio. Tag `m0-done`.
   them. Pins: JUCE 8.0.16-security (JUCE 9 exists, but the fixed decision is JUCE 8), Catch2 v3.16.1, Signalsmith
   Stretch 1.4.0 (declared now, fetched from M1), VST3 SDK v3.8.0_build_66 (validator only), pluginval v1.0.4.
 - 0.4: tests are split into `klay_core_tests` (JUCE-free, proves C-007) and `klay_tests` (plugin); a ctest also
-  fails if any file under `core/` includes JUCE.
+  fails if any file under `core/` includes JUCE (after the M0 review also `JuceHeader.h` and any `JUCE_` macro, with
+  a failing fixture each under `tests/fixtures/core-juce/`).
 - 0.5: the RT guard lives in `core/rt/` (a folder not in the §10 list; JUCE-free). Beyond the decision-1
   `operator new`/`delete` hook and the `klay::rt::Mutex` wrapper, the test harness patches the test executable's
   import table for HeapAlloc/HeapReAlloc/HeapFree and the blocking lock/wait calls, so `std::malloc` (JUCE's

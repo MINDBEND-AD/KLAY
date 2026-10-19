@@ -46,6 +46,13 @@ endforeach()
 # C-007: core/ must not include JUCE headers.
 add_test(NAME "core is JUCE-free"
     COMMAND ${CMAKE_COMMAND} -DCORE_DIR=${PROJECT_SOURCE_DIR}/core -P ${PROJECT_SOURCE_DIR}/cmake/CheckCoreJuceFree.cmake)
+foreach(fixture juceheader juce-macro)
+    add_test(NAME "core JUCE check: ${fixture} fixture fails"
+        COMMAND ${CMAKE_COMMAND} -DCORE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/fixtures/core-juce/${fixture}
+                -P ${PROJECT_SOURCE_DIR}/cmake/CheckCoreJuceFree.cmake)
+    set_tests_properties("core JUCE check: ${fixture} fixture fails" PROPERTIES
+        PASS_REGULAR_EXPRESSION "C-007 violated, JUCE used in core/:.*${fixture}/Bad.h")
+endforeach()
 
 # C-006 licence labelling check (tools/check-licenses.ps1): the real tree passes, every fixture fails with its own
 # violation. PASS_REGULAR_EXPRESSION keeps a crashing script from counting as an expected failure.
