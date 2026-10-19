@@ -244,7 +244,7 @@ LT-2 and AC-5 results. Tag `m1-done`.
   ticked: needs the PO's parts and listening (steps in `docs/checks/M1.md`).
 - Final verified run (2026-10-19, dev machine, Release): build OK, `ctest` 102/102 passed, `tools/validate.ps1`
   pluginval strictness 8 PASSED, VST3 validator 47 passed / 0 failed. PO manual checks (dev editor and DAW play-in-key,
-  LT-1, LT-2, AC-5) reported all passed; 1.15 and 1.17 ticked. M1 exit met apart from the `m1-done` tag, which the PO
+  LT-1, LT-2, AC-5) reported all passed; 1.15 and 1.17 ticked. LT-1: default Signalsmith preset kept (spec decision log). M1 exit met apart from the `m1-done` tag, which the PO
   sets after the milestone review.
 
 ## M2 Library + randomizer
