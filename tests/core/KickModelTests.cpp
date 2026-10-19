@@ -29,8 +29,9 @@ TEST_CASE("Default kick matches the spec defaults", "[core][model][FR-100][FR-11
         CHECK(layer.endTrimMs == 0.0);
         CHECK(layer.pitchSemitones == 0);
         CHECK(layer.pitchCents == 0);
-        CHECK(layer.stretch == 1.0);
-        CHECK(layer.mode == LayerMode::stretch);
+        CHECK(layer.mode == LayerMode::length); // FR-106 default
+        CHECK(layer.length == 1.0);
+        CHECK(layer.tapeSpeed == 1.0);
         CHECK_FALSE(layer.mute);
         CHECK_FALSE(layer.solo);
         CHECK_FALSE(layer.lock);
@@ -67,8 +68,9 @@ TEST_CASE("Kick round-trips through JSON", "[core][model][FR-003][NFR-012]")
     l.endTrimMs = 40.0;
     l.pitchSemitones = -7;
     l.pitchCents = 33;
-    l.stretch = 1.75;
-    l.mode = LayerMode::repitch;
+    l.length = 1.75;
+    l.tapeSpeed = 0.6;
+    l.mode = LayerMode::tape;
     l.mute = true;
     l.solo = true;
     l.lock = true;
@@ -86,7 +88,7 @@ TEST_CASE("Kick round-trips through JSON", "[core][model][FR-003][NFR-012]")
     kick.settings.stretchPreset = StretchPreset::cheaper;
 
     const auto json = toJson(kick);
-    CHECK(json.find("\"schemaVersion\": 1") != std::string::npos);
+    CHECK(json.find("\"schemaVersion\": 2") != std::string::npos);
     const auto parsed = kickFromJson(json);
     REQUIRE(parsed.has_value());
     CHECK(*parsed == kick);
@@ -149,7 +151,8 @@ TEST_CASE("Kick JSON clamps values to their ranges", "[core][model][FR-100][FR-1
     CHECK(l.faderDb == 0.0f);
     CHECK(l.pitchSemitones == 12);
     CHECK(l.pitchCents == -100);
-    CHECK(l.stretch == 8.0);
+    CHECK(l.length == 8.0); // schema 1 "stretch" migrated to Length (FR-105 range)
+    CHECK(l.mode == LayerMode::length);
     CHECK(l.offsetMs == 0.0);
     REQUIRE(l.envelope.points.size() == 2);
     CHECK(l.envelope.points[0] == EnvelopePoint{ 10.0, 0.0f, 1.0f }); // sorted by time
@@ -166,4 +169,64 @@ TEST_CASE("Kick JSON rejects malformed input", "[core][model][FR-003]")
     CHECK_FALSE(kickFromJson(R"({"schemaVersion":"one"})").has_value());
     CHECK_FALSE(kickFromJson(R"({"schemaVersion":0})").has_value());
     CHECK_FALSE(kickFromJson(R"({"schemaVersion":1,)").has_value());
+}
+
+// Plan 1.19 (Q-B), NFR-012: spec v0.4 kicks (schema 1) load into the one-knob model of spec v0.10.
+TEST_CASE("Schema 1 layers migrate to Length, Pitch or Tape", "[core][model][NFR-012][FR-106]")
+{
+    std::vector<std::string> warnings;
+    const auto kick = kickFromJson(R"({
+        "schemaVersion": 1,
+        "layers": [
+            { "mode": "stretch", "stretch": 1.5 },
+            { "mode": "stretch", "pitchSemitones": -3, "pitchCents": 20 },
+            { "mode": "stretch", "stretch": 0.75, "pitchSemitones": 5 },
+            { "mode": "repitch", "stretch": 1.25, "pitchSemitones": 7 },
+            { "mode": "stretch" },
+            { "pitchCents": -40 }
+        ]
+    })", &warnings);
+    REQUIRE(kick.has_value());
+    const auto& l = kick->layers;
+    CHECK(l[0].mode == LayerMode::length);
+    CHECK(l[0].length == 1.5);
+    CHECK(l[1].mode == LayerMode::pitch);
+    CHECK(l[1].pitchSemitones == -3);
+    CHECK(l[1].pitchCents == 20);
+    CHECK(l[2].mode == LayerMode::length); // both set: Length wins, the pitch is kept in Pitch mode
+    CHECK(l[2].length == 0.75);
+    CHECK(l[2].pitchSemitones == 5);
+    CHECK(l[3].mode == LayerMode::tape); // old Repitch: stretch was the length factor, so speed = 1 / stretch
+    CHECK(l[3].tapeSpeed == 0.8);
+    CHECK(l[3].pitchSemitones == 7);
+    CHECK(l[4] == makeDefaultLayer(4));
+    CHECK(l[5].mode == LayerMode::pitch);
+
+    REQUIRE(warnings.size() == 1); // only the layer that now sounds different
+    CHECK(warnings[0].find("Layer 3") != std::string::npos);
+
+    // A migrated kick saves as schema 2 and round-trips.
+    const auto again = kickFromJson(toJson(*kick));
+    REQUIRE(again.has_value());
+    CHECK(*again == *kick);
+}
+
+TEST_CASE("Schema 2 reads each mode's own value", "[core][model][FR-106]")
+{
+    std::vector<std::string> warnings;
+    const auto kick = kickFromJson(R"({
+        "schemaVersion": 2,
+        "layers": [ { "mode": "tape", "length": 2.0, "pitchSemitones": 4, "tapeSpeed": 1.5, "stretch": 3.0 },
+                    { "mode": "stretch", "tapeSpeed": 20 } ]
+    })", &warnings);
+    REQUIRE(kick.has_value());
+    CHECK(warnings.empty());
+    const auto& a = kick->layers[0];
+    CHECK(a.mode == LayerMode::tape);
+    CHECK(a.length == 2.0); // kept for when Length is selected again
+    CHECK(a.pitchSemitones == 4);
+    CHECK(a.tapeSpeed == 1.5);
+    const auto& b = kick->layers[1];
+    CHECK(b.mode == LayerMode::length); // "stretch" is not a schema 2 mode name: default
+    CHECK(b.tapeSpeed == 8.0);          // clamped to 0.25–8
 }

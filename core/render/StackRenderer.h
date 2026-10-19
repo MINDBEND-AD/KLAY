@@ -91,10 +91,13 @@ struct RenderContext
 bool isAudible(const model::Kick& kick, size_t index) noexcept;
 
 // Start/end trim then Stretch (Signalsmith, pitch kept) or Repitch (varispeed) of one part, before the offset
-// (FR-102, FR-104–106). In Repitch mode the Pitch knob is ignored (greyed out in the UI) and the Stretch knob is
-// the varispeed: length × s, pitch −12·log2(s) semitones.
+// (FR-102, FR-104–106, spec v0.10). Only the active mode applies: Length = Signalsmith length change, Pitch = exact
+// pitch shift (time-stretch + Repitch), Tape = varispeed at the tape speed (length / s, pitch +12·log2(s) st).
 StereoBuffer processPart(const model::Layer& layer, const StereoBuffer& sample, const RenderContext& context,
                          model::StretchPreset preset);
+
+// Pitch change of the active mode in semitones: Pitch mode st + ct, Tape mode +12·log2(speed), Length mode 0.
+double activeSemitones(const model::Layer& layer) noexcept;
 
 // FR-107 offline render: for each audible layer, processPart → offset → volume envelope → fader → its bus (Main / A1
 // / A2 × follow / fixed); then the kick length cut with the 5 ms end fade (FR-108) and autogain (FR-109, Q7: one gain

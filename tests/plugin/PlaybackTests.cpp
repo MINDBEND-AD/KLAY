@@ -123,8 +123,10 @@ TEST_CASE("Save and reopen gives a bit-identical render", "[plugin][state][FR-00
     KlayProcessor a;
     prepared(a);
     auto kick = temp.kick();
-    kick.layers[1].stretch = 1.4;
-    kick.layers[1].pitchSemitones = -2;
+    kick.layers[1].length = 1.4;
+    kick.layers[2].samplePath = kick.layers[1].samplePath;
+    kick.layers[2].mode = klay::model::LayerMode::pitch;
+    kick.layers[2].pitchSemitones = -2;
     kick.layers[0].envelope.points = { { 0.0, 1.0f, 0.3f }, { 200.0, 0.2f, 0.0f } };
     waitFor(a, a.setKick(kick));
 

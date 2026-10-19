@@ -7,6 +7,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace klay::model
 {
@@ -17,7 +18,8 @@ std::string toJson(const Kick& kick);
 
 // Parses JSON written by toJson or by an older/newer version (NFR-012): unknown fields are ignored, missing or
 // mistyped fields take their default, values are clamped to their range. Returns nullopt for malformed JSON, a
-// non-object root, or a missing / non-positive schemaVersion.
-std::optional<Kick> kickFromJson(std::string_view json);
+// non-object root, or a missing / non-positive schemaVersion. Schema 1 files (spec v0.4 layer modes) are migrated to
+// schema 2; `warnings`, if given, receives one line per layer that now sounds different (plan Q-B).
+std::optional<Kick> kickFromJson(std::string_view json, std::vector<std::string>* warnings = nullptr);
 
 } // namespace klay::model

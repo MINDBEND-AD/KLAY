@@ -91,7 +91,8 @@ void sanitise(Kick& kick)
         layer.endTrimMs = clampFinite(layer.endTrimMs, 0.0, 60'000.0, 0.0);
         layer.pitchSemitones = std::clamp(layer.pitchSemitones, -12, 12);
         layer.pitchCents = std::clamp(layer.pitchCents, -100, 100);
-        layer.stretch = clampFinite(layer.stretch, 0.25, 8.0, 1.0);
+        layer.length = clampFinite(layer.length, 0.25, 8.0, 1.0);
+        layer.tapeSpeed = clampFinite(layer.tapeSpeed, 0.25, 8.0, 1.0);
 
         auto& points = layer.envelope.points;
         for (auto& p : points)
@@ -130,7 +131,13 @@ const char* toString(Role role)
 
 const char* toString(LayerMode mode)
 {
-    return mode == LayerMode::repitch ? "repitch" : "stretch";
+    switch (mode)
+    {
+        case LayerMode::pitch: return "pitch";
+        case LayerMode::tape: return "tape";
+        case LayerMode::length: break;
+    }
+    return "length";
 }
 
 const char* toString(Routing routing)

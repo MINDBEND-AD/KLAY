@@ -106,7 +106,7 @@ TEST_CASE("Processor state round-trips the schema version", "[plugin][FR-003]")
     klay::KlayProcessor source;
     juce::MemoryBlock saved;
     source.getStateInformation(saved);
-    CHECK(saved.toString().contains("\"schemaVersion\": 1"));
+    CHECK(saved.toString().contains("\"schemaVersion\": 2"));
 
     klay::KlayProcessor restored;
     restored.setStateInformation(saved.getData(), (int) saved.getSize());

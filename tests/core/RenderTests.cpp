@@ -243,11 +243,13 @@ TEST_CASE("Two renders are bit-identical", "[core][render][NFR-009]")
     f.samples["b"] = makeSample(test::sine(3000.0, kSr, 3000));
     auto kick = model::makeDefaultKick();
     kick.layers[0].samplePath = "a";
-    kick.layers[0].stretch = 1.3;
-    kick.layers[0].pitchSemitones = -3;
+    kick.layers[0].length = 1.3;
+    kick.layers[2].samplePath = "a";
+    kick.layers[2].mode = model::LayerMode::pitch;
+    kick.layers[2].pitchSemitones = -3;
     kick.layers[1].samplePath = "b";
-    kick.layers[1].mode = model::LayerMode::repitch;
-    kick.layers[1].pitchSemitones = 5;
+    kick.layers[1].mode = model::LayerMode::tape;
+    kick.layers[1].tapeSpeed = 1.33;
     kick.layers[1].pitchFollow = true;
     kick.layers[1].envelope.points = { { 0.0, 1.0f, 0.4f }, { 50.0, 0.0f, 0.0f } };
 
@@ -346,7 +348,8 @@ TEST_CASE("Benchmark: re-render of 12 layers after an edit", "[core][render][bm]
     {
         auto& layer = kick.layers[static_cast<size_t>(i)];
         layer.samplePath = "s" + std::to_string(i);
-        layer.stretch = 1.0 + 0.1 * i;
+        layer.mode = i % 2 ? model::LayerMode::pitch : model::LayerMode::length;
+        layer.length = 1.0 + 0.1 * i;
         layer.pitchSemitones = i % 5 - 2;
         layer.pitchFollow = i % 2 == 0;
         layer.routing = static_cast<model::Routing>(i % 3);
@@ -372,23 +375,49 @@ TEST_CASE("Benchmark: re-render of 12 layers after an edit", "[core][render][bm]
     CHECK(worstMs < 30.0);
 }
 
-// FR-106 (PO decision 2026-10-19): in Repitch mode the Stretch knob is the varispeed and the Pitch knob is ignored.
-TEST_CASE("Repitch mode: Stretch knob sets the speed, Pitch is ignored", "[core][render][FR-106]")
+// FR-104–106 (spec v0.10, task 1.20): one knob, three modes; only the active mode's value is applied.
+TEST_CASE("Only the active layer mode is applied", "[core][render][FR-104][FR-105][FR-106]")
 {
     Fixture f;
-    f.samples["sine"] = makeSample(test::sine(1000.0, kSr, 4800));
-    auto kick = plainKick();
-    auto& layer = kick.layers[0];
+    f.samples["sine"] = makeSample(test::sine(220.0, kSr, 9600));
+    const auto& input = f.samples["sine"]->audio;
+    auto layer = model::makeDefaultLayer(0);
     layer.samplePath = "sine";
-    layer.mode = model::LayerMode::repitch;
-    layer.stretch = 2.0;
-    layer.pitchSemitones = 7; // ignored in Repitch mode
+    // Every mode holds a value; only the active one may show in the output.
+    layer.length = 2.0;
+    layer.pitchSemitones = 7;
     layer.pitchCents = 30;
+    layer.tapeSpeed = 0.5;
+    const auto hz = [](const render::StereoBuffer& b) { return test::zeroCrossingHz(b.left.data(), b.size() / 4, b.size() * 3 / 4, kSr); };
 
-    const auto part = render::processPart(layer, f.samples["sine"]->audio, f.context, model::StretchPreset::standard);
-    REQUIRE(part.size() == 9600); // length × 2
-    CHECK(std::abs(test::cents(test::zeroCrossingHz(part.left.data(), 1000, 8600, kSr), 500.0)) < 2.0); // one octave down
+    // Length: length × 2, pitch kept (FR-105).
+    layer.mode = model::LayerMode::length;
+    auto part = render::processPart(layer, input, f.context, model::StretchPreset::standard);
+    CHECK(part.size() == 19200);
+    CHECK(std::abs(test::cents(hz(part), 220.0)) < 2.0);
 
-    layer.stretch = 1.0;
-    CHECK(render::processPart(layer, f.samples["sine"]->audio, f.context, model::StretchPreset::standard) == f.samples["sine"]->audio);
+    // Pitch: +7.3 st exact, length kept (FR-104).
+    layer.mode = model::LayerMode::pitch;
+    part = render::processPart(layer, input, f.context, model::StretchPreset::standard);
+    CHECK(part.size() == 9600);
+    CHECK(std::abs(test::cents(hz(part), 220.0) - 730.0) < 2.0);
+
+    // Tape: speed 0.5 = twice as long and one octave down, together.
+    layer.mode = model::LayerMode::tape;
+    part = render::processPart(layer, input, f.context, model::StretchPreset::standard);
+    CHECK(part.size() == 19200);
+    CHECK(std::abs(test::cents(hz(part), 110.0)) < 2.0);
+    CHECK(render::activeSemitones(layer) == -12.0);
+
+    // Neutral value of the active mode: the trimmed sample, bit for bit, whatever the other modes hold.
+    for (auto mode : { model::LayerMode::length, model::LayerMode::pitch, model::LayerMode::tape })
+    {
+        auto neutral = layer;
+        neutral.mode = mode;
+        neutral.length = mode == model::LayerMode::length ? 1.0 : 4.0;
+        neutral.pitchSemitones = mode == model::LayerMode::pitch ? 0 : -9;
+        neutral.pitchCents = mode == model::LayerMode::pitch ? 0 : 50;
+        neutral.tapeSpeed = mode == model::LayerMode::tape ? 1.0 : 3.0;
+        CHECK(render::processPart(neutral, input, f.context, model::StretchPreset::standard) == input);
+    }
 }

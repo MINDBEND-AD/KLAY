@@ -194,8 +194,12 @@ void KlayProcessor::setStateInformation(const void* data, int sizeInBytes)
         return;
 
     const std::string_view json(static_cast<const char*>(data), static_cast<size_t>(sizeInBytes));
-    if (auto parsed = model::kickFromJson(json))
+    std::vector<std::string> warnings;
+    if (auto parsed = model::kickFromJson(json, &warnings))
+    {
+        loadWarnings = std::move(warnings);
         setKick(std::move(*parsed));
+    }
 }
 
 } // namespace klay

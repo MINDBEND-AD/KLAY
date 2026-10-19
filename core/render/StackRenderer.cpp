@@ -90,14 +90,32 @@ StereoBuffer processPart(const model::Layer& layer, const StereoBuffer& sample, 
     for (int ch = 0; ch < 2; ++ch)
         std::copy_n(sample.channel(ch) + start, trimmed.size(), trimmed.channel(ch));
 
-    if (layer.mode == model::LayerMode::stretch)
-        return stretch(trimmed, sr, layer.stretch, layer.pitchSemitones + layer.pitchCents / 100.0, preset, context.resamplers);
+    // FR-106 (spec v0.10): only the active mode is applied; the other modes' values are kept but ignored.
+    switch (layer.mode)
+    {
+        case model::LayerMode::pitch:
+        {
+            const double semitones = activeSemitones(layer);
+            return semitones == 0.0 ? trimmed : stretch(trimmed, sr, 1.0, semitones, preset, context.resamplers); // FR-104, exact pitch
+        }
+        case model::LayerMode::tape:
+            // Speed s: length / s, pitch +12·log2(s) semitones (2× = half the length, one octave up).
+            return layer.tapeSpeed == 1.0 ? trimmed : repitch(trimmed, 12.0 * std::log2(layer.tapeSpeed), context.resamplers);
+        case model::LayerMode::length:
+            break;
+    }
+    return layer.length == 1.0 ? trimmed : stretch(trimmed, sr, layer.length, 0.0, preset); // FR-105
+}
 
-    // FR-106 Repitch (PO decision 2026-10-19): the Pitch knob is greyed out; the Stretch knob sets the playback
-    // speed, so a length factor s plays at speed 1/s, i.e. −12·log2(s) semitones.
-    if (layer.stretch == 1.0)
-        return trimmed;
-    return repitch(trimmed, -12.0 * std::log2(layer.stretch), context.resamplers);
+double activeSemitones(const model::Layer& layer) noexcept
+{
+    switch (layer.mode)
+    {
+        case model::LayerMode::pitch: return layer.pitchSemitones + layer.pitchCents / 100.0;
+        case model::LayerMode::tape: return 12.0 * std::log2(layer.tapeSpeed);
+        case model::LayerMode::length: break;
+    }
+    return 0.0;
 }
 
 namespace
@@ -106,9 +124,16 @@ namespace
     {
         std::ostringstream key;
         key.precision(17);
+        // Only the active mode's value affects the part, so switching back to a mode finds its cached part again.
         key << layer.samplePath << '|' << sampleRate << '|' << layer.startTrimMs << '|' << layer.endTrimMs << '|'
-            << layer.pitchSemitones << '|' << layer.pitchCents << '|' << layer.stretch << '|' << model::toString(layer.mode)
-            << '|' << model::toString(preset);
+            << model::toString(layer.mode) << '|';
+        switch (layer.mode)
+        {
+            case model::LayerMode::pitch: key << layer.pitchSemitones << '|' << layer.pitchCents; break;
+            case model::LayerMode::tape: key << layer.tapeSpeed; break;
+            case model::LayerMode::length: key << layer.length; break;
+        }
+        key << '|' << model::toString(preset);
         return key.str();
     }
 

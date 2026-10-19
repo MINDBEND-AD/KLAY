@@ -76,6 +76,8 @@ public:
     void pollHostTempo(double nowMs);
     // FR-003: parts referenced by the kick that could not be loaded (from the newest render).
     std::vector<std::string> getMissingSamples() const;
+    // NFR-012: notes from loading an older state (e.g. a spec v0.4 layer that now applies only one mode).
+    const std::vector<std::string>& getLoadWarnings() const noexcept { return loadWarnings; }
     render::KickEngine& getEngine() noexcept { return *engine; }
     double getEffectiveBpm() const;
 
@@ -84,6 +86,7 @@ private:
     std::uint64_t requestRender();
 
     model::Kick kick = model::makeDefaultKick();
+    std::vector<std::string> loadWarnings;
     SampleCache sampleCache;
     std::unique_ptr<render::KickEngine> engine;
     render::TempoDebouncer tempo;

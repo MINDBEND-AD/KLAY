@@ -70,7 +70,7 @@ KlayEditor::KlayEditor(KlayProcessor& p) : AudioProcessorEditor(p), processor(p)
         setupSlider(r.stretch, 0.25, 8.0, 0.001, "x");
         r.stretch.setSkewFactorFromMidPoint(1.0); // log-like travel around 1× (decision 8)
         setupSlider(r.offset, 0.0, 200.0, 0.01, " ms");
-        r.mode.addItemList({ "Stretch", "Repitch" }, 1);
+        r.mode.addItemList({ "Length", "Pitch", "Tape" }, 1);
         r.routing.addItemList({ "MAIN", "A1", "A2" }, 1);
         r.sample.setColour(juce::Label::textColourId, juce::Colours::white.withAlpha(0.7f));
 
@@ -84,10 +84,10 @@ KlayEditor::KlayEditor(KlayProcessor& p) : AudioProcessorEditor(p), processor(p)
         };
         r.semitones.onValueChange = [&r, layerEdit] { layerEdit([&r](model::Layer& l) { l.pitchSemitones = (int) r.semitones.getValue(); }); };
         r.cents.onValueChange = [&r, layerEdit] { layerEdit([&r](model::Layer& l) { l.pitchCents = (int) r.cents.getValue(); }); };
-        r.stretch.onValueChange = [&r, layerEdit] { layerEdit([&r](model::Layer& l) { l.stretch = r.stretch.getValue(); }); };
+        r.stretch.onValueChange = [&r, layerEdit] { layerEdit([&r](model::Layer& l) { (l.mode == model::LayerMode::tape ? l.tapeSpeed : l.length) = r.stretch.getValue(); }); };
         r.offset.onValueChange = [&r, layerEdit] { layerEdit([&r](model::Layer& l) { l.offsetMs = r.offset.getValue(); }); };
         r.mode.onChange = [&r, layerEdit] {
-            layerEdit([&r](model::Layer& l) { l.mode = r.mode.getSelectedItemIndex() == 1 ? model::LayerMode::repitch : model::LayerMode::stretch; });
+            layerEdit([&r](model::Layer& l) { l.mode = static_cast<model::LayerMode>(juce::jlimit(0, 2, r.mode.getSelectedItemIndex())); });
         };
         r.routing.onChange = [&r, layerEdit] {
             layerEdit([&r](model::Layer& l) { l.routing = static_cast<model::Routing>(juce::jmax(0, r.routing.getSelectedItemIndex())); });
@@ -156,17 +156,18 @@ void KlayEditor::refreshFromKick()
         r.fader.setValue(l.faderDb <= model::kMinusInfinityDb ? -60.0 : l.faderDb, juce::dontSendNotification);
         r.semitones.setValue(l.pitchSemitones, juce::dontSendNotification);
         r.cents.setValue(l.pitchCents, juce::dontSendNotification);
-        r.stretch.setValue(l.stretch, juce::dontSendNotification);
+        r.stretch.setValue(l.mode == model::LayerMode::tape ? l.tapeSpeed : l.length, juce::dontSendNotification);
         r.offset.setValue(l.offsetMs, juce::dontSendNotification);
-        r.mode.setSelectedItemIndex(l.mode == model::LayerMode::repitch ? 1 : 0, juce::dontSendNotification);
+        r.mode.setSelectedItemIndex(static_cast<int>(l.mode), juce::dontSendNotification);
         r.routing.setSelectedItemIndex(static_cast<int>(l.routing), juce::dontSendNotification);
         r.mute.setToggleState(l.mute, juce::dontSendNotification);
         r.solo.setToggleState(l.solo, juce::dontSendNotification);
         r.follow.setToggleState(l.pitchFollow, juce::dontSendNotification);
-        // FR-106 (2026-10-19): Pitch is greyed out in Repitch mode; the Stretch knob is the varispeed.
-        const bool pitchActive = l.mode == model::LayerMode::stretch;
+        // FR-106 (spec v0.10): only the active mode's control is live; the slider edits Length or Tape speed.
+        const bool pitchActive = l.mode == model::LayerMode::pitch;
         r.semitones.setEnabled(pitchActive);
         r.cents.setEnabled(pitchActive);
+        r.stretch.setEnabled(! pitchActive);
     }
 }
 
@@ -186,6 +187,8 @@ void KlayEditor::timerCallback()
                          juce::dontSendNotification);
         juce::String status = juce::String(latest->bpm, 2) + " BPM, " + juce::String((int) latest->length) + " samples, cache "
                               + juce::String(processor.getEngine().cachedNotes()) + " notes";
+        if (const auto warnings = processor.getLoadWarnings(); ! warnings.empty())
+            status += "  |  " + juce::String::fromUTF8(warnings.front().c_str());
         if (! latest->missingSamples.empty())
             status += "  |  missing: " + juce::String::fromUTF8(latest->missingSamples.front().c_str())
                       + (latest->missingSamples.size() > 1 ? " (+" + juce::String((int) latest->missingSamples.size() - 1) + ")" : "");

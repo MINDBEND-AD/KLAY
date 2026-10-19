@@ -9,7 +9,8 @@ namespace klay::model
 {
 
 // Current version of the plugin state / preset JSON (spec §10: versioned JSON with a schemaVersion field).
-inline constexpr int kSchemaVersion = 1;
+// 2: layer modes Length / Pitch / Tape with one value each (spec v0.10, FR-106); version 1 files are migrated on load.
+inline constexpr int kSchemaVersion = 2;
 
 inline constexpr int kDefaultLayerCount = 6; // FR-100
 inline constexpr int kMaxLayerCount = 12;    // FR-100
@@ -28,11 +29,12 @@ enum class Role
     any
 };
 
-// FR-106: Stretch keeps pitch while changing length (Signalsmith); Repitch is varispeed.
+// FR-106: Length changes length only, Pitch changes pitch only (both Signalsmith-based), Tape is varispeed (repitch).
 enum class LayerMode
 {
-    stretch,
-    repitch
+    length,
+    pitch,
+    tape
 };
 
 // Bus a layer feeds (FR-107, glossary "Aux chain / routing"): all or nothing.
@@ -89,10 +91,12 @@ struct Layer
     double offsetMs = 0.0;  // FR-102: delay of the part on the kick timeline, ≥ 0
     double startTrimMs = 0.0; // FR-102: cut from the start of the sample
     double endTrimMs = 0.0;   // FR-102 (Q9): cut from the end of the sample
-    int pitchSemitones = 0;   // FR-104: ±12
-    int pitchCents = 0;       // FR-104: ±100
-    double stretch = 1.0;     // FR-105: 0.25…8 × length
-    LayerMode mode = LayerMode::stretch;
+    // FR-106 (spec v0.10): one layer knob, three modes; each mode keeps its own value, only the active one applies.
+    LayerMode mode = LayerMode::length;
+    double length = 1.0;      // Length mode, FR-105: 0.25…8 × length, pitch kept
+    int pitchSemitones = 0;   // Pitch mode, FR-104: ±12 st …
+    int pitchCents = 0;       // … and ±100 ct, length kept
+    double tapeSpeed = 1.0;   // Tape mode: playback speed 0.25…8× (2× = half the length, one octave up)
 
     bool mute = false;
     bool solo = false;

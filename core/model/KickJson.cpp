@@ -42,7 +42,7 @@ namespace
     }
 
     constexpr std::array roles{ Role::kick, Role::rumble, Role::drive, Role::crunch, Role::transient, Role::texture, Role::any };
-    constexpr std::array modes{ LayerMode::stretch, LayerMode::repitch };
+    constexpr std::array modes{ LayerMode::length, LayerMode::pitch, LayerMode::tape };
     constexpr std::array routings{ Routing::main, Routing::aux1, Routing::aux2 };
     constexpr std::array lengths{ KickLength::sixteenth, KickLength::eighth, KickLength::quarter, KickLength::half, KickLength::bar };
     constexpr std::array presets{ StretchPreset::standard, StretchPreset::cheaper };
@@ -62,10 +62,11 @@ namespace
             { "offsetMs", layer.offsetMs },
             { "startTrimMs", layer.startTrimMs },
             { "endTrimMs", layer.endTrimMs },
+            { "mode", toString(layer.mode) },
+            { "length", layer.length },
             { "pitchSemitones", layer.pitchSemitones },
             { "pitchCents", layer.pitchCents },
-            { "stretch", layer.stretch },
-            { "mode", toString(layer.mode) },
+            { "tapeSpeed", layer.tapeSpeed },
             { "mute", layer.mute },
             { "solo", layer.solo },
             { "lock", layer.lock },
@@ -75,7 +76,29 @@ namespace
         };
     }
 
-    Layer layerFromJson(const json& j, int index)
+    // Schema 1 (spec v0.4): Stretch mode applied a length factor ("stretch") and a pitch together; Repitch mode used
+    // "stretch" as a length factor for varispeed. Migration (plan Q-B): keep both values in their v2 modes; Length is
+    // active if its factor is not 1×, else Pitch if the pitch is not 0, else Length; Repitch becomes Tape with
+    // speed = 1 / stretch.
+    void migrateV1Layer(const json& j, Layer& layer, int index, std::vector<std::string>* warnings)
+    {
+        const double stretch = read(j, "stretch", 1.0);
+        const bool hasPitch = layer.pitchSemitones != 0 || layer.pitchCents != 0;
+        if (read<std::string>(j, "mode", "stretch") == "repitch")
+        {
+            layer.mode = LayerMode::tape;
+            layer.tapeSpeed = stretch > 0.0 ? 1.0 / stretch : 1.0;
+            return;
+        }
+        layer.length = stretch;
+        layer.mode = stretch != 1.0 ? LayerMode::length : (hasPitch ? LayerMode::pitch : LayerMode::length);
+        if (stretch != 1.0 && hasPitch && warnings != nullptr)
+            warnings->push_back("Layer " + std::to_string(index + 1) + " (" + layer.name
+                                + "): this kick was saved with a length and a pitch change on one layer; only the length "
+                                  "change (Length mode) is applied now, the pitch value is kept in Pitch mode");
+    }
+
+    Layer layerFromJson(const json& j, int index, int schemaVersion, std::vector<std::string>* warnings)
     {
         Layer layer = makeDefaultLayer(index);
         if (! j.is_object())
@@ -90,8 +113,16 @@ namespace
         layer.endTrimMs = read(j, "endTrimMs", layer.endTrimMs);
         layer.pitchSemitones = read(j, "pitchSemitones", layer.pitchSemitones);
         layer.pitchCents = read(j, "pitchCents", layer.pitchCents);
-        layer.stretch = read(j, "stretch", layer.stretch);
-        layer.mode = readEnum(j, "mode", layer.mode, modes);
+        if (schemaVersion < 2)
+        {
+            migrateV1Layer(j, layer, index, warnings);
+        }
+        else
+        {
+            layer.mode = readEnum(j, "mode", layer.mode, modes);
+            layer.length = read(j, "length", layer.length);
+            layer.tapeSpeed = read(j, "tapeSpeed", layer.tapeSpeed);
+        }
         layer.mute = read(j, "mute", layer.mute);
         layer.solo = read(j, "solo", layer.solo);
         layer.lock = read(j, "lock", layer.lock);
@@ -138,12 +169,13 @@ std::string toJson(const Kick& kick)
     return root.dump(2);
 }
 
-std::optional<Kick> kickFromJson(std::string_view text)
+std::optional<Kick> kickFromJson(std::string_view text, std::vector<std::string>* warnings)
 {
     const json root = json::parse(text, nullptr, false);
     if (root.is_discarded() || ! root.is_object())
         return std::nullopt;
-    if (read<long long>(root, "schemaVersion", 0) <= 0)
+    const auto schemaVersion = read<long long>(root, "schemaVersion", 0);
+    if (schemaVersion <= 0)
         return std::nullopt;
 
     Kick kick = makeDefaultKick();
@@ -166,7 +198,7 @@ std::optional<Kick> kickFromJson(std::string_view text)
         kick.layers.clear();
         int index = 0;
         for (const auto& lj : *it)
-            kick.layers.push_back(layerFromJson(lj, index++));
+            kick.layers.push_back(layerFromJson(lj, index++, static_cast<int>(schemaVersion), warnings));
     }
 
     sanitise(kick);
