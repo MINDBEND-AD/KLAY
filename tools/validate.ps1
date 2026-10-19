@@ -80,27 +80,53 @@ $pluginvalArgs = @('--strictness-level', "$Strictness", '--timeout-ms', '600000'
 if ($SkipGuiTests) { $pluginvalArgs += '--skip-gui-tests' }
 $pluginvalArgs += @('--validate', $Plugin)
 
+# Runs a native program with its stderr merged into the returned lines. Under Windows PowerShell 5.1 a redirected
+# stderr line becomes an error record, which aborts the script while $ErrorActionPreference is 'Stop'; 'Continue'
+# here lets a failing tool still reach the summary. Sets $LASTEXITCODE as usual.
+function Invoke-Native([string] $exe, [string[]] $arguments) {
+    $saved = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try { & $exe @arguments 2>&1 | ForEach-Object { "$_" } }
+    finally { $ErrorActionPreference = $saved }
+}
+
 # pluginval is a GUI-subsystem executable; piping keeps PowerShell waiting for it and captures its output.
-& $pluginvalExe @pluginvalArgs 2>&1 | ForEach-Object { "$_" }
+Invoke-Native $pluginvalExe $pluginvalArgs
 $pluginvalExit = $LASTEXITCODE
 Write-Output "pluginval exit code: $pluginvalExit"
 
 # --- Steinberg VST3 validator ------------------------------------------------------------------------------------
+# The SDK pin lives in tools/vst3-validator/CMakeLists.txt; a stamp file records the tag the validator was built
+# from, so a changed pin rebuilds it.
+$validatorSource = Join-Path $repo 'tools/vst3-validator'
+$sdkTag = [regex]::Match((Get-Content -LiteralPath (Join-Path $validatorSource 'CMakeLists.txt') -Raw),
+                         'GIT_TAG\s+(\S+)').Groups[1].Value
+if (-not $sdkTag) { Write-Output 'ERROR: no GIT_TAG found in tools/vst3-validator/CMakeLists.txt'; exit 2 }
 $validatorBuild = Join-Path $repo 'build/vst3-validator'
 $validatorExe = Join-Path $validatorBuild 'bin/Release/validator.exe'
-if (-not (Test-Path -LiteralPath $validatorExe)) {
-    Write-Output 'Building the VST3 validator from the pinned VST3 SDK ...'
-    & cmake -S (Join-Path $repo 'tools/vst3-validator') -B $validatorBuild -G $Generator -A x64 | Out-Null
-    if ($LASTEXITCODE -ne 0) { Write-Output 'ERROR: configuring the VST3 validator failed'; exit 2 }
-    & cmake --build $validatorBuild --config Release --target validator -- /m /v:minimal | Out-Null
+$validatorStamp = Join-Path $validatorBuild 'klay-vst3sdk-tag.txt'
+$builtTag = if (Test-Path -LiteralPath $validatorStamp) { (Get-Content -LiteralPath $validatorStamp -Raw).Trim() } else { '' }
+if (-not (Test-Path -LiteralPath $validatorExe) -or $builtTag -ne $sdkTag) {
+    if ($builtTag -and $builtTag -ne $sdkTag) {
+        Write-Output "VST3 SDK pin changed ($builtTag -> $sdkTag); rebuilding the validator from scratch ..."
+        Remove-Item -LiteralPath $validatorBuild -Recurse -Force
+    }
+    else {
+        Write-Output "Building the VST3 validator from the pinned VST3 SDK $sdkTag ..."
+    }
+    $buildLog = Invoke-Native 'cmake' @('-S', $validatorSource, '-B', $validatorBuild, '-G', $Generator, '-A', 'x64')
+    if ($LASTEXITCODE -ne 0) { $buildLog; Write-Output 'ERROR: configuring the VST3 validator failed'; exit 2 }
+    $buildLog = Invoke-Native 'cmake' @('--build', $validatorBuild, '--config', 'Release', '--target', 'validator', '--', '/m', '/v:minimal')
     if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $validatorExe)) {
+        $buildLog
         Write-Output 'ERROR: building the VST3 validator failed'
         exit 2
     }
+    Set-Content -LiteralPath $validatorStamp -Value $sdkTag -Encoding ASCII
 }
 
-Write-Section "Steinberg VST3 validator (SDK v3.8.0_build_66) : $Plugin"
-$validatorOutput = & $validatorExe $Plugin 2>&1 | ForEach-Object { "$_" }
+Write-Section "Steinberg VST3 validator (SDK $sdkTag) : $Plugin"
+$validatorOutput = Invoke-Native $validatorExe @($Plugin)
 $validatorExit = $LASTEXITCODE
 $validatorOutput | Where-Object { $_ -match '^\[|ERROR|Result:' -and $_ -notmatch '^\[Succeeded\]$' }
 $result = $validatorOutput | Where-Object { $_ -match 'Result: (\d+) tests passed, (\d+) tests failed' } | Select-Object -Last 1

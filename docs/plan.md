@@ -135,7 +135,10 @@ Reaper and FL Studio. Tag `m0-done`.
 - 0.7: the VST3 validator is built from the pinned SDK by a separate CMake project (`tools/vst3-validator`, into
   `build/vst3-validator`); pluginval is downloaded per run-machine to `tools/bin/` and SHA-256 checked (GitHub
   publishes no digest for v1.0.4, so the hash is pinned on first download). The validator found the unnamed default
-  program; it is now called "Default".
+  program; it is now called "Default". After the M0 review `validate.ps1` runs the native tools with
+  `$ErrorActionPreference = 'Continue'` (Windows PowerShell 5.1 otherwise aborts on their stderr before the
+  summary), rebuilds the validator from scratch when the SDK `GIT_TAG` in `tools/vst3-validator` differs from the
+  stamp `build/vst3-validator/klay-vst3sdk-tag.txt`, and prints the CMake output when that build fails.
 - 0.8: public repo https://github.com/MINDBEND-AD/KLAY (created 2026-10-19 with the PO's go-ahead; history was
   rewritten by the PO beforehand so every commit uses the GitHub noreply address). `.github/workflows/ci.yml` runs on
   windows-latest and picks VS 2026 or 2022 (the runner had VS 18.10, so 2026). First run green:
