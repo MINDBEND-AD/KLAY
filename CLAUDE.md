@@ -16,6 +16,12 @@ The build order and task breakdown live in `docs/plan.md` once it exists.
 - A task is done only when it builds, its tests pass, and the requirement's
   verification from spec section 12 is met. Don't mark tasks done on "it compiles".
 - Commit after each completed task with a short message; never rewrite history.
+- Git identity: never set or change git `user.name` / `user.email`, and never write
+  personal email addresses into files. Commits use the GitHub noreply address from
+  the repo's local git config.
+- Before every push, check that `git log --format='%ae %ce'` for the commits being
+  pushed shows only `@users.noreply.github.com` addresses; if any other address
+  appears, stop and ask.
 - Update `docs/plan.md` (tick tasks, note deviations) as you go.
 
 ## Fixed technical decisions (don't change without asking)
