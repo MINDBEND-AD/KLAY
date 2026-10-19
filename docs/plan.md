@@ -93,7 +93,7 @@ interfaces implemented in `adapters/`) · `plugin/` · `ui/` · `tools/render-cl
 | 0.3 ✓ | Empty AudioProcessor: silence out, accepts 44.1–192 kHz and 16–4096 blocks; empty editor showing name + version; state stub with `schemaVersion` | C-001, FR-005, FR-003 (stub) | UT: process at every SR × block-size combination, no crash, silent output; state round-trip |
 | 0.4 ✓ | Test harness: Catch2 under ctest; JUCE-free core test plus a processor smoke test | §12 | `ctest` passes |
 | 0.5 ✓ | RT harness (Q1): allocation/lock hooks, audio-thread flag, `RT_GUARD` macro | NFR-001, FR-234 | UT: a deliberate allocation inside a guard is caught; the empty `processBlock` passes |
-| 0.6 | License check `tools/check-licenses.ps1`: GPL-family SPDX without the `LICENSE-GPL` marker, or missing from THIRD_PARTY_LICENSES.md, fails; runs as a ctest | C-006 | UT: an unmarked fixture file fails, the real tree passes |
+| 0.6 ✓ | License check `tools/check-licenses.ps1`: GPL-family SPDX without the `LICENSE-GPL` marker, or missing from THIRD_PARTY_LICENSES.md, fails; runs as a ctest | C-006 | UT: an unmarked fixture file fails, the real tree passes |
 | 0.7 | `tools/validate.ps1`: pluginval (pinned) strictness 8 + VST3 validator on the built plugin | NFR-011 | PV passes, output shown |
 | 0.8 | Public GitHub repo (PO go-ahead before creating it; prerequisites in decision 3) + GitHub Actions workflow (windows, MSVC): configure, build, ctest, license check, PV | §10 | Green CI run shown |
 | 0.9 | `docs/checks/M0.md`: load, play and close in Ableton Live, Reaper, FL Studio | FR-007 (partial) | PO |

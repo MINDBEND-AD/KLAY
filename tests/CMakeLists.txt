@@ -42,3 +42,29 @@ endforeach()
 # C-007: core/ must not include JUCE headers.
 add_test(NAME "core is JUCE-free"
     COMMAND ${CMAKE_COMMAND} -DCORE_DIR=${PROJECT_SOURCE_DIR}/core -P ${PROJECT_SOURCE_DIR}/cmake/CheckCoreJuceFree.cmake)
+
+# C-006 licence labelling check (tools/check-licenses.ps1): the real tree passes, every fixture fails with its own
+# violation. PASS_REGULAR_EXPRESSION keeps a crashing script from counting as an expected failure.
+find_program(KLAY_POWERSHELL NAMES powershell pwsh REQUIRED)
+set(licence_check ${KLAY_POWERSHELL} -NoProfile -ExecutionPolicy Bypass -File ${PROJECT_SOURCE_DIR}/tools/check-licenses.ps1)
+set(licence_fixtures ${CMAKE_CURRENT_SOURCE_DIR}/fixtures/licenses)
+
+add_test(NAME "licence check: repository passes" COMMAND ${licence_check})
+add_test(NAME "licence check: clean fixture passes" COMMAND ${licence_check} -Root ${licence_fixtures}/clean)
+set_tests_properties("licence check: clean fixture passes" PROPERTIES PASS_REGULAR_EXPRESSION "licence check passed: 3 code file")
+
+add_test(NAME "licence check: unmarked GPL file fails" COMMAND ${licence_check} -Root ${licence_fixtures}/unmarked)
+set_tests_properties("licence check: unmarked GPL file fails" PROPERTIES
+    PASS_REGULAR_EXPRESSION "FAIL: src/unmarked.cpp: .* missing LICENSE-GPL marker")
+
+add_test(NAME "licence check: unlisted GPL file fails" COMMAND ${licence_check} -Root ${licence_fixtures}/unlisted)
+set_tests_properties("licence check: unlisted GPL file fails" PROPERTIES
+    PASS_REGULAR_EXPRESSION "FAIL: other/unlisted.cpp: .* not listed in THIRD_PARTY_LICENSES.md")
+
+add_test(NAME "licence check: undeclared dependency fails" COMMAND ${licence_check} -Root ${licence_fixtures}/undeclared-dep)
+set_tests_properties("licence check: undeclared dependency fails" PROPERTIES
+    PASS_REGULAR_EXPRESSION "FAIL: CMakeLists.txt: dependency 'somegpllib'")
+
+add_test(NAME "licence check: missing SPDX header fails" COMMAND ${licence_check} -Root ${licence_fixtures}/no-spdx)
+set_tests_properties("licence check: missing SPDX header fails" PROPERTIES
+    PASS_REGULAR_EXPRESSION "FAIL: src/no_header.cpp: no SPDX-License-Identifier")
