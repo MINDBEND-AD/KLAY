@@ -22,11 +22,8 @@ public:
         mutex.lock();
     }
 
-    bool try_lock()
-    {
-        checkRealtime(Violation::lock);
-        return mutex.try_lock();
-    }
+    // Non-blocking, so allowed inside RT_GUARD, like std::mutex::try_lock under the harness (plan, M0 note 0.5).
+    bool try_lock() { return mutex.try_lock(); }
 
     void unlock() { mutex.unlock(); }
 

@@ -114,7 +114,8 @@ Reaper and FL Studio. Tag `m0-done`.
   `operator new`/`delete` hook and the `klay::rt::Mutex` wrapper, the test harness patches the test executable's
   import table for HeapAlloc/HeapReAlloc/HeapFree and the blocking lock/wait calls, so `std::malloc` (JUCE's
   `HeapBlock`, `AudioBuffer`), `std::mutex` and `juce::CriticalSection` inside `RT_GUARD` are caught too. Zero-timeout
-  waits and try-locks are allowed. Plain `malloc` in the shipped plugin is unaffected; the hooks exist in test
+  waits and try-locks (`std::mutex`, `klay::rt::Mutex`; the latter reported them until the M0 review) are
+  allowed: they never block. Plain `malloc` in the shipped plugin is unaffected; the hooks exist in test
   executables only. `RT_GUARD` stays in `processBlock` of the shipped plugin (one thread-local increment).
   After the M0 review the import-table hooks also cover the other allocators (VirtualAlloc/Free, LocalAlloc/ReAlloc/
   Free, GlobalAlloc/ReAlloc/Free), WaitOnAddress (`std::atomic::wait`; zero timeout allowed), file I/O

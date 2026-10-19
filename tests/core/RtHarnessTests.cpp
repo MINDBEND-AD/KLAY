@@ -84,6 +84,21 @@ TEST_CASE("RT harness: a klay::rt::Mutex lock inside RT_GUARD is caught", "[rt][
     CHECK(recorder.counts().allocations == 0);
 }
 
+TEST_CASE("RT harness: try_lock inside RT_GUARD is allowed", "[rt][NFR-001]")
+{
+    klay::rt::Mutex rtMutex;
+    std::mutex stdMutex;
+    ScopedViolationRecorder recorder;
+    {
+        RT_GUARD;
+        if (rtMutex.try_lock())
+            rtMutex.unlock();
+        if (stdMutex.try_lock())
+            stdMutex.unlock();
+    }
+    CHECK(recorder.counts().total() == 0);
+}
+
 TEST_CASE("RT harness: allocations and locks outside RT_GUARD are not reported", "[rt][NFR-001]")
 {
     klay::rt::Mutex mutex;
