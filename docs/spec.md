@@ -4,7 +4,7 @@ Oct 19, 2026 · @Bernard
 
 ## 1. Document control & purpose
 
-This is version 0.11 (draft) of the requirements and specification for KLAY (working title), a layer-based kick drum plugin inspired by a commercial layer-based kick plugin. Its job is to give the coding session a single, testable source of truth.
+This is version 0.12 (draft) of the requirements and specification for KLAY (working title), a layer-based kick drum plugin inspired by a commercial layer-based kick plugin. Its job is to give the coding session a single, testable source of truth.
 
 - **Scope:** a VST3 instrument plugin for Windows that stacks sample layers into a kick, processes it through a modular FX rack, and exports the result. Version 1 is a pure sample player with no genre style targets.
 - **Out of scope (v1):** synthesis (planned for version 2), genre style targets, macOS / AU / AAX, standalone app, copy protection and licensing, distribution, stem export (version 2), sequencing.
@@ -481,7 +481,7 @@ Two main pages, Kick (default) and FX, switched from the top bar. The library is
 | UI-025 | Collapsing the library leaves a 40 px rail: expand button, search, one button per role. A role button expands the library opened at that role, and the role row is briefly highlighted. The visualiser and layer cards take the freed width; the window size does not change | Must |
 | UI-026 | The 100 % window size is 1180 × 760 px; 75–200 % scale from it (UI-013); at 75 % the library starts collapsed | Should |
 | UI-027 | Key display states (FR-120, FR-123): detected = note and Hz in ember; uncertain = amber with “?” after the note; none = “—” | Should |
-| UI-028 | Layer fader scale (FR-101): ticks at 0, −3, −6, −12, −24 dB and −∞; half the travel covers 0 to about −13 dB | Should |
+| UI-028 | Layer fader (FR-101), console style without 3D effects: the fader sits in a plain 1 px frame; a lane runs down the middle of the dB scale where the cap travels, black above the cap and filled with the layer colour below it (no glow; dimmed to about 40 % on muted or solo-dimmed layers); tick marks on both sides of the lane at 0, −3, −6, −12, −24 dB and −∞, dB numbers on the left; the current value in dB below the fader, inside the frame; half the travel covers 0 to about −13 dB | Should |
 | UI-029 | The preset field shows FACTORY or USER before the preset name; the visualiser footer shows the selected layer's offset, trim range and envelope point count | Could |
 
 Visual design reference: the [Kick page mock](https://claude.ai/artifact/LKLNeY4AEsZHF6ZJFW3WyV) shows the Forge theme and every card, key, dial and meter state (UI-020 to UI-029). The wireframes below show layout. The layer-card knob design is provisional and will be revisited when UI work starts in M3.
@@ -689,6 +689,7 @@ These need answers before or during the first coding session.
 | 2026-10-19 | LT-1 passed; the default Signalsmith Stretch preset stays the stretch setting (cheaper preset not used). LT-2 and AC-5 passed, including exact-pitch shifting (time-stretch by the pitch ratio plus a Repitch back to length) and the first-hit Repitch fallback. M1 manual checks (dev editor, plays in key in a DAW) passed | Product owner listening tests and checks at the end of M1 (docs/checks/M1.md in the code repo) |
 | 2026-10-19 | Spec review before the M1 second pass: the Tape knob value is a playback speed (2× = half the length, one octave up); Pitch mode and the Key Track cache shift pitch by a Signalsmith time-stretch plus a Lagrange repitch (exact pitch); each layer mode keeps its own value (open question closed); UI-017 settings keep their own requirement's priority; the empty-card button is Reforge; the 100 % window size is 1180 × 760 px. Document version 0.10 | Product owner decisions on contradictions C1–C6 found in the v0.9 review (docs/plan.md in the code repo) |
 | 2026-10-22 | M2 decisions: the bin resets the whole layer to its defaults (FR-112); a roll resets the rolled layer's start and end trim (FR-141, FR-142); a layer with an empty role pool stays as it is and shows “No sample found for this layer”; the library accepts Role → sub-folder → files and Role → files (FR-160); sample tagging with a predefined category list moves to version 2 (FR-167); restoring a host session clears the undo history, a loaded kick file is one undo step, layer selection is not undoable. Document version 0.11 | Product owner decisions from the M2 check (UC-1, UC-2, UC-3 passed on the dev editor) |
+| 2026-10-22 | Layer card: the Length/Pitch readout and hint text are removed and the knob is centred; the layer fader becomes a framed console fader with a layer-colour lane (UI-028). Document version 0.12 | Product owner decisions from the Kick page mock review |
 
 ### Sources
 
