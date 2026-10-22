@@ -382,6 +382,18 @@ dev editor with the factory library per `docs/checks/M2.md`. Tag `m2-done`.
   file. BM (dev machine, Release, serial ctest): synthetic 1 s parts at 44.1 kHz, layers 1–3 max 47 ms, all six layers
   max 49 ms; staging library (`KLAY_BM_LIBRARY=C:\dev\KLAY-samples`) max 27 ms / 27 ms; target < 100 ms. Timing BMs are
   meant for a serial ctest (as CI runs it); under `ctest -j` they compete for the cores.
+- 2.7: dev editor (temporary, 1400 px wide): Forge, Undo / Redo (also Ctrl+Z / Ctrl+Shift+Z), roll template toggles,
+  seed field with "Forge seed", Library... (stores the folder) and a library status line; per row a role selector,
+  Load, ↻ Reforge, Bin (disabled when locked or empty), L lock, double-click rename, and a click anywhere in the row
+  selects the layer (highlighted). Every control edits through `KlayProcessor::edit`; slider drags are gestures (one
+  undo step). UT drives the buttons, the rename label, a knob drag and the shortcuts. Not ticked: its verification is
+  the PO check in `docs/checks/M2.md`, which also lists five small decisions for the PO (bin, trims on rolls, empty
+  pool, library folder, undo on host restore).
+- Final verified run (2026-10-22, dev machine, Release): build OK; `ctest` (serial) 143 tests, 142 passed, 1 skipped
+  (the optional real-library NFR-005 BM, run by hand with `KLAY_BM_LIBRARY=C:\dev\KLAY-samples`: max 29 ms);
+  `tools/validate.ps1`: pluginval strictness 8 PASSED, VST3 validator 47 passed / 0 failed. Synthetic NFR-005 max
+  46–77 ms across runs (77 ms when run straight after the real-library BM in the same process); NFR-008 startup with
+  cache 12 ms, NFR-007 1.5 MB. Left for the M2 exit: the PO check (`docs/checks/M2.md`, ticks 2.7) and the `m2-done` tag.
 
 ## M3 Visualiser UI
 
