@@ -400,6 +400,12 @@ dev editor with the factory library per `docs/checks/M2.md`. Tag `m2-done`.
 - Re-run on the final M2 code (2026-10-22, after the bin and trim changes): build OK, `ctest` 145 tests, 144 passed, 1 skipped (the optional real-library BM)
   (serial), `tools/validate.ps1` pluginval strictness 8 PASSED, VST3 validator 47 passed / 0 failed. `m2-done` set on
   the PO's instruction.
+- CI on the `m2-done` commit (run 39786376122, 2026-10-22): green; `ctest` 145 tests, 144 passed, 1
+  skipped (the real-library BM), pluginval strictness 8 PASSED, VST3 validator 47 passed / 0 failed. Over target on
+  the shared runner, reported only (deviation 2026-10-19): NFR-005 Forge max 136 ms (layers 1–3) and 212 ms (all six layers), AC-2 root
+  ±2 126 ms (dev machine: 47–77 ms, 49 ms, 46 ms). The 2.6 speed-up comes from parallel loads and parallel YIN
+  frames, so it gains less on the runner's few cores; if the NFR-005 reference machine has far fewer cores than the
+  dev machine, Forge latency needs another look.
 
 ## M3 Visualiser UI
 
