@@ -57,7 +57,7 @@ library::Analysis analyseSample(const std::string& utf8Path)
     a.ok = true;
     a.lengthSeconds = static_cast<double>(n) / rate;
     a.peak = peak;
-    const auto key = library::detectKey(mono.data(), mono.size(), rate);
+    const auto key = library::detectKey(mono.data(), mono.size(), rate, false); // the scan is parallel per file
     a.rootDetected = key.detected;
     a.rootNote = key.midiNote;
     a.rootHz = key.hz;

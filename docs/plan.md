@@ -329,7 +329,7 @@ which may be confused with the layer's Tape mode in UI text and docs.
 | 2.3 ✓ | Seeded RNG + roll engine: Forge over the roll template, Reforge per layer, locked layers untouched, only the sample replaced | FR-141, FR-142, FR-143, FR-146, FR-147 | UT: Gherkin "layer 2 locked, layer 3 Crunch"; same seed gives the same roll; fader/envelope/offset/pitch/stretch/routing unchanged |
 | 2.4 ✓ | Layer operations: lock, mute (Shift unmutes all), exclusive solo (Shift adds), bin (disabled when locked), select, rename | FR-110–114 | UT incl. the Gherkin solo example |
 | 2.5 ✓ | Undo manager: commands for all model and settings edits, ≥ 50 steps, one gesture = one step | FR-145, FR-239 | UT: 60 edits undone/redone gives identical state |
-| 2.6 | Roll latency: chosen samples loaded on a background thread; measure | NFR-005 | BM: Forge to audible < 100 ms |
+| 2.6 ✓ | Roll latency: chosen samples loaded on a background thread; measure | NFR-005 | BM: Forge to audible < 100 ms |
 | 2.7 | Dev editor extension: Forge, Reforge per layer, lock, undo/redo | — (temporary) | PO |
 
 **Exit M2:** all UT/RT pass and are shown; NFR-005 and NFR-008 benchmarks pass; the PO runs UC-1 and UC-2 on the
@@ -373,6 +373,15 @@ dev editor with the factory library per `docs/checks/M2.md`. Tag `m2-done`.
   turn a mouse-down-to-mouse-up gesture into one step (FR-239) while its edits apply and render live; Forge and
   Reforge are one step each. A host state restore (`setStateInformation`) clears the history. FX chains join the
   snapshot when they join the kick in M4. The dev editor moves onto `edit()` in 2.7.
+- 2.6: the drawn samples are loaded on the render worker (background), and now in parallel: `renderKick` loads each
+  distinct file once, all at the same time, and `SampleCache` no longer holds its lock while a file loads. The first
+  measurement (Forge to the render holding the new samples being published, cold sample cache, 48 kHz) was 200 ms on
+  synthetic 1 s parts and up to 105 ms on the staging library: serial loads plus about 125 ms of YIN on a new key-layer
+  sample. YIN (FR-120) now stops each frame one lag past its dip and runs its frames on parallel threads, gathered in
+  frame order: same arithmetic, same result (key tests and goldens unchanged); the library scan keeps one thread per
+  file. BM (dev machine, Release, serial ctest): synthetic 1 s parts at 44.1 kHz, layers 1–3 max 47 ms, all six layers
+  max 49 ms; staging library (`KLAY_BM_LIBRARY=C:\dev\KLAY-samples`) max 27 ms / 27 ms; target < 100 ms. Timing BMs are
+  meant for a serial ctest (as CI runs it); under `ctest -j` they compete for the cores.
 
 ## M3 Visualiser UI
 

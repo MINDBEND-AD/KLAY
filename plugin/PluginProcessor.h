@@ -109,6 +109,8 @@ public:
     const std::vector<std::string>& getLoadWarnings() const noexcept { return loadWarnings; }
     render::KickEngine& getEngine() noexcept { return *engine; }
     double getEffectiveBpm() const;
+    // Generation of the newest render this processor requested (e.g. by an edit), for tests and benchmarks.
+    std::uint64_t getRequestedGeneration() const noexcept { return requestedGeneration; }
 
     // FR-160, FR-165: the sample library index, kept up to date in the background (task 2.1).
     library::LibraryScanner& getLibrary() noexcept { return library; }
@@ -143,6 +145,7 @@ private:
     std::uint64_t poolsVersion = ~std::uint64_t{ 0 };
     std::uint64_t seedState = 0, lastRollSeed = 0;
     size_t selectedLayer = 0;
+    std::uint64_t requestedGeneration = 0;
     model::UndoHistory history;
     model::Kick gestureStart;
     std::string gestureLabel;

@@ -169,13 +169,34 @@ RenderedKick renderKick(const model::Kick& kick, const RenderContext& context)
     }
 
     // Load (and report) every referenced part, also of silent layers, so missing files are always listed.
+    // Each distinct file is loaded once, all of them in parallel when allowed: after a Forge the new samples are read
+    // and resampled together (NFR-005). Results are assigned in layer order, so the render does not depend on timing.
+    std::vector<std::string> paths;
+    for (const auto& layer : kick.layers)
+        if (! layer.samplePath.empty() && std::find(paths.begin(), paths.end(), layer.samplePath) == paths.end())
+            paths.push_back(layer.samplePath);
+    std::vector<std::shared_ptr<const SampleData>> loadedFiles(paths.size());
+    if (context.samples)
+    {
+        if (context.parallel && paths.size() > 1)
+        {
+            std::vector<std::future<std::shared_ptr<const SampleData>>> loads;
+            for (const auto& path : paths)
+                loads.push_back(std::async(std::launch::async, context.samples, path));
+            for (size_t p = 0; p < paths.size(); ++p)
+                loadedFiles[p] = loads[p].get();
+        }
+        else
+            for (size_t p = 0; p < paths.size(); ++p)
+                loadedFiles[p] = context.samples(paths[p]);
+    }
     std::vector<std::shared_ptr<const SampleData>> samples(kick.layers.size());
     for (size_t i = 0; i < kick.layers.size(); ++i)
     {
         const auto& path = kick.layers[i].samplePath;
         if (path.empty())
             continue;
-        samples[i] = context.samples ? context.samples(path) : nullptr;
+        samples[i] = loadedFiles[static_cast<size_t>(std::find(paths.begin(), paths.end(), path) - paths.begin())];
         if (! samples[i] && std::find(result.missingSamples.begin(), result.missingSamples.end(), path) == result.missingSamples.end())
             result.missingSamples.push_back(path);
     }

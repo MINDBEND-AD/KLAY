@@ -16,8 +16,9 @@ inline constexpr double kUncertainCents = 50.0; // YIN and FFT further apart tha
 
 // FR-120: fundamental of a kick part. Own YIN (30–150 Hz) per frame; the key is the median over the settled tail
 // (voiced frames after the attack, latter part of the sound), cross-checked against the FFT peak of the same region.
-// Returns detected = false if no voiced frames are found.
-render::KeyInfo detectKey(const float* mono, size_t numSamples, double sampleRate);
+// Returns detected = false if no voiced frames are found. `parallel` spreads the YIN frames over the hardware threads
+// (same result); callers that already run many detections at once (the library scan) pass false.
+render::KeyInfo detectKey(const float* mono, size_t numSamples, double sampleRate, bool parallel = true);
 
 // Note name with octave, C4 = MIDI 60 (e.g. 30 → "F#1").
 std::string noteName(int midiNote);

@@ -4,7 +4,9 @@
 #include "core/dsp/Fft.h"
 
 #include <algorithm>
+#include <atomic>
 #include <cmath>
+#include <thread>
 #include <vector>
 
 namespace klay::library
@@ -30,10 +32,16 @@ std::string noteName(int midiNote)
 namespace
 {
     // YIN (de Cheveigné & Kawahara 2002) on one frame: cumulative mean normalised difference, absolute threshold,
-    // parabolic refinement. Returns 0 for an unvoiced frame.
+    // parabolic refinement. Returns 0 for an unvoiced frame. The difference function is computed lag by lag and stops
+    // one lag past the chosen dip (the cumulative normalisation needs no later lags), so a typical kick frame skips
+    // about a third of the work with the same result (NFR-005).
     double yinFrame(const float* x, size_t window, size_t minTau, size_t maxTau, double sampleRate, std::vector<double>& d)
     {
+        constexpr double threshold = 0.15;
         d.assign(maxTau + 2, 0.0);
+        d[0] = 1.0;
+        double running = 0.0;
+        size_t best = 0; // first lag ≥ minTau below the threshold, then walked down to the local minimum
         for (size_t tau = 1; tau <= maxTau + 1; ++tau)
         {
             double sum = 0.0;
@@ -42,26 +50,19 @@ namespace
                 const double diff = static_cast<double>(x[i]) - x[i + tau];
                 sum += diff * diff;
             }
-            d[tau] = sum;
-        }
-        double running = 0.0;
-        d[0] = 1.0;
-        for (size_t tau = 1; tau <= maxTau + 1; ++tau)
-        {
-            running += d[tau];
-            d[tau] = running > 0.0 ? d[tau] * static_cast<double>(tau) / running : 1.0;
-        }
+            running += sum;
+            d[tau] = running > 0.0 ? sum * static_cast<double>(tau) / running : 1.0;
 
-        constexpr double threshold = 0.15;
-        size_t best = 0;
-        for (size_t tau = minTau; tau <= maxTau; ++tau)
-            if (d[tau] < threshold)
+            if (best != 0)
             {
-                while (tau + 1 <= maxTau && d[tau + 1] < d[tau])
-                    ++tau;
-                best = tau;
-                break;
+                if (tau <= maxTau && d[tau] < d[best])
+                    best = tau; // still descending
+                else
+                    break; // d[best + 1] is known: done
             }
+            else if (tau >= minTau && tau <= maxTau && d[tau] < threshold)
+                best = tau;
+        }
         if (best == 0)
             return 0.0;
 
@@ -79,7 +80,7 @@ namespace
     }
 } // namespace
 
-render::KeyInfo detectKey(const float* mono, size_t n, double sampleRate)
+render::KeyInfo detectKey(const float* mono, size_t n, double sampleRate, bool parallel)
 {
     render::KeyInfo info;
     const auto minTau = static_cast<size_t>(std::floor(sampleRate / kKeyMaxHz));
@@ -108,16 +109,31 @@ render::KeyInfo detectKey(const float* mono, size_t n, double sampleRate)
                                                                 [](const Frame& a, const Frame& b) { return a.rms < b.rms; })
                                                - frames.begin());
 
-    std::vector<double> d;
+    // Frames from the peak until the tail drops below about −30 dB of it. Each frame is independent, so they run on
+    // several threads (NFR-005: the key layer's detection is on the Forge-to-audible path) and are gathered in frame
+    // order: the result does not depend on the thread count.
+    size_t endFrame = peakFrame;
+    while (endFrame < frames.size() && frames[endFrame].rms >= maxRms * 0.03)
+        ++endFrame;
+    std::vector<double> f0(endFrame - peakFrame, 0.0);
+    std::atomic<size_t> next{ peakFrame };
+    auto work = [&] {
+        std::vector<double> d;
+        for (size_t f = next.fetch_add(1); f < endFrame; f = next.fetch_add(1))
+            f0[f - peakFrame] = yinFrame(mono + frames[f].start, window, minTau, maxTau, sampleRate, d);
+    };
+    const size_t threads = parallel ? std::min<size_t>(std::max(1u, std::thread::hardware_concurrency()), (f0.size() + 7) / 8) : 1;
+    std::vector<std::thread> pool;
+    for (size_t t = 1; t < threads; ++t)
+        pool.emplace_back(work);
+    work();
+    for (auto& t : pool)
+        t.join();
+
     std::vector<std::pair<size_t, double>> voiced; // frame start, f0
-    for (size_t f = peakFrame; f < frames.size(); ++f)
-    {
-        if (frames[f].rms < maxRms * 0.03) // below about −30 dB of the peak: the tail has ended
-            break;
-        const double hz = yinFrame(mono + frames[f].start, window, minTau, maxTau, sampleRate, d);
-        if (hz >= kKeyMinHz && hz <= kKeyMaxHz)
+    for (size_t f = peakFrame; f < endFrame; ++f)
+        if (const double hz = f0[f - peakFrame]; hz >= kKeyMinHz && hz <= kKeyMaxHz)
             voiced.emplace_back(frames[f].start, hz);
-    }
     if (voiced.empty())
         return info;
 

@@ -45,6 +45,7 @@ add_executable(klay_tests
     plugin/PlaybackTests.cpp
     plugin/ProcessMemory.h
     plugin/ProcessorTests.cpp
+    plugin/RollLatencyBenchmarks.cpp
     plugin/UndoPluginTests.cpp)
 target_link_libraries(klay_tests PRIVATE klay_core klay_rt_harness KLAY Catch2::Catch2WithMain)
 if(WIN32)

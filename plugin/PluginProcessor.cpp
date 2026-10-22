@@ -19,14 +19,18 @@ namespace klay
 
 std::shared_ptr<const render::SampleData> SampleCache::get(const std::string& path, double sampleRate)
 {
-    std::lock_guard lock(mutex);
     const auto key = std::make_pair(path, sampleRate);
-    if (const auto it = loaded.find(key); it != loaded.end())
-        return it->second;
+    {
+        std::lock_guard lock(mutex);
+        if (const auto it = loaded.find(key); it != loaded.end())
+            return it->second;
+    }
+    // Loaded outside the lock, so the renderer can load a roll's samples in parallel (NFR-005).
     auto result = adapters::loadSample(path, sampleRate);
-    if (result.sample) // failures are not cached, so a file that appears later is picked up
-        loaded[key] = result.sample;
-    return result.sample;
+    if (! result.sample) // failures are not cached, so a file that appears later is picked up
+        return nullptr;
+    std::lock_guard lock(mutex);
+    return loaded.try_emplace(key, std::move(result.sample)).first->second;
 }
 
 KlayProcessor::KlayProcessor(ProcessorOptions options)
@@ -170,7 +174,8 @@ juce::AudioProcessorEditor* KlayProcessor::createEditor()
 
 std::uint64_t KlayProcessor::requestRender()
 {
-    return engine->requestRender(kick, currentSampleRate, getEffectiveBpm());
+    requestedGeneration = engine->requestRender(kick, currentSampleRate, getEffectiveBpm());
+    return requestedGeneration;
 }
 
 std::filesystem::path KlayProcessor::defaultDataDir()
