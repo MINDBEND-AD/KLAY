@@ -11,6 +11,7 @@
 #include "core/rt/RtGuard.h"
 
 #include <fstream>
+#include <random>
 #include <thread>
 
 namespace klay
@@ -45,6 +46,7 @@ KlayProcessor::KlayProcessor(ProcessorOptions options)
         libraryRoot = library::fromUtf8(line);
     }
     startLibrary(); // NFR-008: the cached index is published from the background thread, startup does not wait
+    seedState = (static_cast<std::uint64_t>(std::random_device{}()) << 32) ^ std::random_device{}(); // FR-147
 
     engine = std::make_unique<render::KickEngine>(render::RenderEngine::Config{
         [this](const std::string& path) { return sampleCache.get(path, currentSampleRate); },
@@ -185,6 +187,36 @@ void KlayProcessor::startLibrary()
     const unsigned threads = std::max(1u, std::thread::hardware_concurrency() / 2);
     library.start({ libraryRoot, libraryRoot.empty() ? std::filesystem::path() : dataDir / "library-index.json",
                     &adapters::analyseSample, threads });
+}
+
+const random::RolePools& KlayProcessor::getRolePools()
+{
+    if (const auto version = library.version(); version != poolsVersion)
+    {
+        poolsVersion = version;
+        pools = random::RolePools(*library.snapshot());
+    }
+    return pools;
+}
+
+random::RollResult KlayProcessor::forge(std::optional<std::uint64_t> seed)
+{
+    lastRollSeed = seed ? *seed : random::Rng::splitMix(seedState);
+    auto next = kick;
+    auto result = random::forge(next, getRolePools(), lastRollSeed);
+    if (! result.changed.empty())
+        setKick(std::move(next));
+    return result;
+}
+
+random::RollResult KlayProcessor::reforge(size_t layer, std::optional<std::uint64_t> seed)
+{
+    lastRollSeed = seed ? *seed : random::Rng::splitMix(seedState);
+    auto next = kick;
+    auto result = random::reforge(next, layer, getRolePools(), lastRollSeed);
+    if (! result.changed.empty())
+        setKick(std::move(next));
+    return result;
 }
 
 void KlayProcessor::setLibraryRoot(const std::filesystem::path& root, bool persist)

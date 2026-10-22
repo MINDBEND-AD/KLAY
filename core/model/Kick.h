@@ -118,6 +118,8 @@ struct Settings
     int keyLayer = 0;                            // FR-124: index, layer 1 by default
     int envelopeGrid = 4;                        // FR-282: 4, 8 or 16
     StretchPreset stretchPreset = StretchPreset::standard;
+    // FR-146 roll template: the layers (0-based indices) that Forge re-rolls; default layers 1–3 (Kick, Rumble, Drive).
+    std::vector<int> rollTemplate{ 0, 1, 2 };
 
     bool operator==(const Settings&) const = default;
 };
@@ -143,6 +145,9 @@ void clickMute(Kick& kick, size_t index, bool shift);
 // FR-111: Solo is exclusive, a new Solo replaces the previous ones; Shift+click adds (or removes) this layer's Solo.
 // A plain click on the only soloed layer clears it.
 void clickSolo(Kick& kick, size_t index, bool shift);
+
+// FR-146: whether Forge re-rolls layer `index`.
+bool inRollTemplate(const Settings& settings, size_t index) noexcept;
 
 // Clamps every value to its spec range (FR-100–106, FR-108, FR-124, FR-282) and sorts envelope points by time.
 void sanitise(Kick& kick);

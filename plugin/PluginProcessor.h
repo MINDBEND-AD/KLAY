@@ -4,6 +4,7 @@
 
 #include "core/library/LibraryScanner.h"
 #include "core/model/Kick.h"
+#include "core/random/Roll.h"
 #include "core/render/KickEngine.h"
 #include "core/render/KickPlayer.h"
 #include "core/render/TempoDebouncer.h"
@@ -102,6 +103,14 @@ public:
     void setLibraryRoot(const std::filesystem::path& root, bool persist = true);
     static std::filesystem::path defaultDataDir();
 
+    // FR-140: role pools of the newest published library index (rebuilt when the scanner publishes a new one).
+    const random::RolePools& getRolePools();
+    // FR-141 Forge over the roll template / FR-142 Reforge of one layer, then a re-render. Without a seed a fresh one
+    // is drawn; the seed used is returned and kept (FR-147).
+    random::RollResult forge(std::optional<std::uint64_t> seed = std::nullopt);
+    random::RollResult reforge(size_t layer, std::optional<std::uint64_t> seed = std::nullopt);
+    std::uint64_t getLastRollSeed() const noexcept { return lastRollSeed; }
+
 private:
     void timerCallback() override;
     std::uint64_t requestRender();
@@ -111,6 +120,9 @@ private:
     std::vector<std::string> loadWarnings;
     std::filesystem::path dataDir, libraryRoot;
     library::LibraryScanner library;
+    random::RolePools pools;
+    std::uint64_t poolsVersion = ~std::uint64_t{ 0 };
+    std::uint64_t seedState = 0, lastRollSeed = 0;
     SampleCache sampleCache;
     std::unique_ptr<render::KickEngine> engine;
     render::TempoDebouncer tempo;

@@ -12,6 +12,7 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include <algorithm>
 #include <chrono>
 
 using namespace klay;
@@ -100,4 +101,46 @@ TEST_CASE("NFR-008 / NFR-007: startup with a cached index and RAM per instance",
     WARN("NFR-007 RAM of the instance after startup: " << mb << " MB private bytes (target < 300 MB)");
     KLAY_TIMING_CHECK(ready < 1500.0, "startup " << ready << " ms");
     CHECK(mb < 300.0);
+}
+
+// Tasks 2.2 / 2.3 in the processor: pools follow the published index; Forge and Reforge draw from them, keep the seed
+// and render the new samples (FR-140–142, FR-147).
+TEST_CASE("Processor Forge and Reforge draw from the library pools and render", "[plugin][random][FR-141][FR-142][FR-147]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    test::SyntheticLibrary lib(3);
+    KlayProcessor processor(ProcessorOptions{ lib.root(), lib.dataDir() });
+    REQUIRE(processor.getLibrary().waitUntilReady(30s));
+    CHECK(processor.getRolePools().pool(model::Role::kick).size() == 3);
+    CHECK(processor.getRolePools().total() == 18);
+
+    const auto result = processor.forge();
+    CHECK(result.changed == std::vector<size_t>{ 0, 1, 2 });
+    CHECK(result.seed == processor.getLastRollSeed());
+    const auto& pools = processor.getRolePools();
+    for (size_t i = 0; i < 3; ++i)
+    {
+        const auto& layer = processor.getKick().layers[i];
+        const auto& pool = pools.pool(layer.role);
+        CHECK(std::find(pool.begin(), pool.end(), layer.samplePath) != pool.end());
+    }
+    CHECK(processor.getKick().layers[3].samplePath.empty());
+
+    const auto generation = processor.getEngine().requestRender(processor.getKick(), 48000.0, 155.0);
+    REQUIRE(processor.getEngine().waitForGeneration(generation, 10s));
+    CHECK(processor.getEngine().latest()->missingSamples.empty());
+
+    // The same seed reproduces the roll on another instance (FR-147).
+    KlayProcessor other(ProcessorOptions{ lib.root(), lib.dataDir() });
+    REQUIRE(other.getLibrary().waitUntilReady(30s));
+    other.forge(result.seed);
+    for (size_t i = 0; i < 3; ++i)
+        CHECK(other.getKick().layers[i].samplePath == processor.getKick().layers[i].samplePath);
+
+    const auto before = processor.getKick();
+    const auto re = processor.reforge(3);
+    CHECK(re.changed == std::vector<size_t>{ 3 });
+    for (size_t i = 0; i < before.layers.size(); ++i)
+        if (i != 3)
+            CHECK(processor.getKick().layers[i] == before.layers[i]);
 }

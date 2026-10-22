@@ -326,7 +326,7 @@ which may be confused with the layer's Tape mode in UI text and docs.
 |---|---|---|---|
 | 2.1 ✓ | Sample index: scan Role → sub-folder → files; metadata (role, folder, root, length, peak) built in the background; disk cache with mtime invalidation | FR-160, FR-165, NFR-007, NFR-008 | UT on a fixture tree: built, reused, invalidated; BM: startup with cache < 1.5 s, RAM < 300 MB |
 | 2.2 ✓ | Role pools; layer roles default from name, "Any" role | FR-140 | UT |
-| 2.3 | Seeded RNG + roll engine: Forge over the roll template, Reforge per layer, locked layers untouched, only the sample replaced | FR-141, FR-142, FR-143, FR-146, FR-147 | UT: Gherkin "layer 2 locked, layer 3 Crunch"; same seed gives the same roll; fader/envelope/offset/pitch/stretch/routing unchanged |
+| 2.3 ✓ | Seeded RNG + roll engine: Forge over the roll template, Reforge per layer, locked layers untouched, only the sample replaced | FR-141, FR-142, FR-143, FR-146, FR-147 | UT: Gherkin "layer 2 locked, layer 3 Crunch"; same seed gives the same roll; fader/envelope/offset/pitch/stretch/routing unchanged |
 | 2.4 | Layer operations: lock, mute (Shift unmutes all), exclusive solo (Shift adds), bin (disabled when locked), select, rename | FR-110–114 | UT incl. the Gherkin solo example |
 | 2.5 | Undo manager: commands for all model and settings edits, ≥ 50 steps, one gesture = one step | FR-145, FR-239 | UT: 60 edits undone/redone gives identical state |
 | 2.6 | Roll latency: chosen samples loaded on a background thread; measure | NFR-005 | BM: Forge to audible < 100 ms |
@@ -351,6 +351,15 @@ dev editor with the factory library per `docs/checks/M2.md`. Tag `m2-done`.
 - 2.2: `core/random/RolePools` from the index: one pool per role (that role's samples only, FR-140), the Any pool is
   the whole library; path order from the index, so pools are deterministic. Layer roles already default from the
   name (1.1); layers 7–12 are Any.
+- 2.3: `core/random/Rng` is xoshiro256** seeded through SplitMix64 with its own unbiased bounded draw (std
+  distributions are implementation-defined, so a seed would not reproduce across compilers, FR-147); a UT pins the
+  reference outputs. Each layer draws with its own seed derived from the roll seed and the layer index, so a Reforge
+  with seed s draws what a Forge with seed s draws for that layer. `random::forge` / `reforge` change only
+  `samplePath`: start and end trim stay as well (FR-141 lists what stays; trims are not a sample choice). A layer
+  whose role pool is empty, or that is locked, is left as it is and reported in the result. Roll template
+  (FR-146): `settings.rollTemplate`, 0-based layer indices, default `[0, 1, 2]`, saved with the kick (an additive
+  field, schema stays 2; older files get the default). The processor draws a fresh seed per roll from a
+  `random_device`-seeded state and keeps the last one (`getLastRollSeed`); `forge(seed)` reproduces a roll.
 
 ## M3 Visualiser UI
 

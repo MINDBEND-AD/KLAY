@@ -163,6 +163,7 @@ std::string toJson(const Kick& kick)
               { "keyLayer", s.keyLayer },
               { "envelopeGrid", s.envelopeGrid },
               { "stretchPreset", toString(s.stretchPreset) },
+              { "rollTemplate", s.rollTemplate },
           } },
         { "layers", layers },
     };
@@ -191,6 +192,13 @@ std::optional<Kick> kickFromJson(std::string_view text, std::vector<std::string>
         s.keyLayer = read(j, "keyLayer", s.keyLayer);
         s.envelopeGrid = read(j, "envelopeGrid", s.envelopeGrid);
         s.stretchPreset = readEnum(j, "stretchPreset", s.stretchPreset, presets);
+        if (const auto t = j.find("rollTemplate"); t != j.end() && t->is_array())
+        {
+            s.rollTemplate.clear();
+            for (const auto& v : *t)
+                if (v.is_number_integer())
+                    s.rollTemplate.push_back(static_cast<int>(v.get<long long>()));
+        }
     }
 
     if (const auto it = root.find("layers"); it != root.end() && it->is_array())

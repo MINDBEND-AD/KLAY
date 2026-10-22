@@ -73,6 +73,12 @@ namespace
     }
 } // namespace
 
+bool inRollTemplate(const Settings& settings, size_t index) noexcept
+{
+    return std::find(settings.rollTemplate.begin(), settings.rollTemplate.end(), static_cast<int>(index))
+           != settings.rollTemplate.end();
+}
+
 void sanitise(Kick& kick)
 {
     if (kick.layers.size() > static_cast<size_t>(kMaxLayerCount))
@@ -112,6 +118,11 @@ void sanitise(Kick& kick)
         s.keyLayer = 0;
     if (s.envelopeGrid != 4 && s.envelopeGrid != 8 && s.envelopeGrid != 16)
         s.envelopeGrid = 4;
+    // FR-146: sorted, unique layer indices within the 12-layer stack (a template may name layers not present yet).
+    auto& t = s.rollTemplate;
+    t.erase(std::remove_if(t.begin(), t.end(), [](int i) { return i < 0 || i >= kMaxLayerCount; }), t.end());
+    std::sort(t.begin(), t.end());
+    t.erase(std::unique(t.begin(), t.end()), t.end());
 }
 
 const char* toString(Role role)
