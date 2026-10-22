@@ -1,7 +1,7 @@
 # KLAY — project rules for Claude Code
 
 KLAY is a layer-based kick drum VST3 instrument (sample player in v1). The full
-requirements live in `docs/spec.md` (v0.9); wireframes are in `docs/wireframes/`.
+requirements live in `docs/spec.md` (v0.10); wireframes are in `docs/wireframes/`.
 The build order and task breakdown live in `docs/plan.md` once it exists.
 
 ## How to work
@@ -23,6 +23,13 @@ The build order and task breakdown live in `docs/plan.md` once it exists.
   pushed shows only `@users.noreply.github.com` addresses; if any other address
   appears, stop and ask.
 - Update `docs/plan.md` (tick tasks, note deviations) as you go.
+- Third-party IP: never put the name, trademarks, feature names, wording, artwork or
+  any other material of third-party commercial products (in particular the reference
+  product behind spec section 3) into anything that is committed or pushed: files,
+  images, commit messages, tags, branch names, CI config. This repository is public.
+  Refer to it only as "the reference product"; its analysis stays in the private
+  document. Before every push, also check the commits being pushed for such names;
+  if one appears, stop and ask. Never write the name into this file either.
 
 ## Fixed technical decisions (don't change without asking)
 - C++20, JUCE 8 under AGPLv3, CMake, single VST3 target, Windows 10+ x64, MSVC.
@@ -50,12 +57,13 @@ The build order and task breakdown live in `docs/plan.md` once it exists.
   product owner: prepare them, then stop and ask.
 
 ## Spec section map (docs/spec.md)
-- 2 vision · 4 use cases (UC-1…UC-7) · 5 glossary
+- 2 vision · 3 reference product (pointer to a private document only) · 4 use cases
+  (UC-1…UC-7) · 5 glossary
 - 6 platform & integration (C-001…C-007, FR-001…FR-007)
 - 7.1 layer engine · 7.2 pitch & key · 7.3 randomization · 7.4 sample library
-- 7.5 FX rack · 7.5.1 common module rules · 7.5.2 Distortion · 7.5.3 Equalizer
-  · 7.5.4 Filters · 7.5.5 Finalizer (FR-300…FR-334)
+- 7.5 FX rack · 7.5.1 common module rules · 7.5.2 Distortion · 7.5.3 EQ
+  · 7.5.4 Filters · 7.5.5 Temper (FR-300…FR-334)
 - 7.6 presets · 7.7 export · 7.8 volume envelope editor
-- 8 UI/UX (UI-001…UI-019, wireframes) · 9 non-functional (NFR-001…NFR-016)
+- 8 UI/UX (UI-001…UI-029, wireframes, Kick page mock) · 9 non-functional (NFR-001…NFR-016)
 - 10 architecture & module layout · 11 licensing · 12 testing & acceptance
 - 13 MVP scope & milestones · 14 decision log · 15 user manual notes
