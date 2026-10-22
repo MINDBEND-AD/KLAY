@@ -4,7 +4,7 @@ Oct 19, 2026 · @Bernard
 
 ## 1. Document control & purpose
 
-This is version 0.12 (draft) of the requirements and specification for KLAY (working title), a layer-based kick drum plugin inspired by a commercial layer-based kick plugin. Its job is to give the coding session a single, testable source of truth.
+This is version 0.13 (draft) of the requirements and specification for KLAY (working title), a layer-based kick drum plugin inspired by a commercial layer-based kick plugin. Its job is to give the coding session a single, testable source of truth.
 
 - **Scope:** a VST3 instrument plugin for Windows that stacks sample layers into a kick, processes it through a modular FX rack, and exports the result. Version 1 is a pure sample player with no genre style targets.
 - **Out of scope (v1):** synthesis (planned for version 2), genre style targets, macOS / AU / AAX, standalone app, copy protection and licensing, distribution, stem export (version 2), sequencing.
@@ -486,6 +486,8 @@ Two main pages, Kick (default) and FX, switched from the top bar. The library is
 
 Visual design reference: the [Kick page mock](https://claude.ai/artifact/LKLNeY4AEsZHF6ZJFW3WyV) shows the Forge theme and every card, key, dial and meter state (UI-020 to UI-029). The wireframes below show layout. The layer-card knob design is provisional and will be revisited when UI work starts in M3.
 
+The [FX page mock](https://claude.ai/artifact/XgnuSvhaUsv5kdGi1cZbAB) is the matching design reference for the FX page: module sidebar, the Main, Aux 1 and Aux 2 chains with drag and drop, chain headers, and the expanded Distortion, EQ, Filters and Temper modules (UI-008 to UI-012, sections 7.5.1 to 7.5.5). Its open questions are listed on the page.
+
 Page structure is decided; the Kick page, FX page and Settings menu wireframes are below.
 
 ![Kick page wireframe · layer view with volume envelope, 6 layer cards (3 filled, 3 empty)](wireframes/kick-page.png)
@@ -690,6 +692,7 @@ These need answers before or during the first coding session.
 | 2026-10-19 | Spec review before the M1 second pass: the Tape knob value is a playback speed (2× = half the length, one octave up); Pitch mode and the Key Track cache shift pitch by a Signalsmith time-stretch plus a Lagrange repitch (exact pitch); each layer mode keeps its own value (open question closed); UI-017 settings keep their own requirement's priority; the empty-card button is Reforge; the 100 % window size is 1180 × 760 px. Document version 0.10 | Product owner decisions on contradictions C1–C6 found in the v0.9 review (docs/plan.md in the code repo) |
 | 2026-10-22 | M2 decisions: the bin resets the whole layer to its defaults (FR-112); a roll resets the rolled layer's start and end trim (FR-141, FR-142); a layer with an empty role pool stays as it is and shows “No sample found for this layer”; the library accepts Role → sub-folder → files and Role → files (FR-160); sample tagging with a predefined category list moves to version 2 (FR-167); restoring a host session clears the undo history, a loaded kick file is one undo step, layer selection is not undoable. Document version 0.11 | Product owner decisions from the M2 check (UC-1, UC-2, UC-3 passed on the dev editor) |
 | 2026-10-22 | Layer card: the Length/Pitch readout and hint text are removed and the knob is centred; the layer fader becomes a framed console fader with a layer-colour lane (UI-028). Document version 0.12 | Product owner decisions from the Kick page mock review |
+| 2026-10-22 | FX page mock added as the design reference for the FX page, next to the Kick page mock (section 8). Document version 0.13 | Product owner decision |
 
 ### Sources
 
