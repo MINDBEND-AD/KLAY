@@ -22,6 +22,7 @@ add_executable(klay_core_tests
     core/KickModelTests.cpp
     core/LibraryTests.cpp
     core/PlayerTests.cpp
+    core/RandomTests.cpp
     core/RenderTests.cpp
     core/StretchTests.cpp
     core/TimingGateTests.cpp

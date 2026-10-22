@@ -7,6 +7,8 @@ add_library(klay_core STATIC
     model/Kick.h
     model/KickJson.cpp
     model/KickJson.h
+    random/RolePools.cpp
+    random/RolePools.h
     library/KeyDetector.cpp
     library/KeyDetector.h
     library/LibraryScanner.cpp
