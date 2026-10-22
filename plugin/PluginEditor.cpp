@@ -320,8 +320,9 @@ void KlayEditor::reportRoll(const char* what, const random::RollResult& result)
     text += result.changed.empty() ? juce::String("nothing changed") : "new sample on layer " + list(result.changed);
     if (! result.locked.empty())
         text += "; locked " + list(result.locked);
-    if (! result.emptyPool.empty())
-        text += "; empty pool on layer " + list(result.emptyPool);
+    // PO decision 2026-10-22: a layer whose role has no samples stays as it is, with this message.
+    for (const auto l : result.emptyPool)
+        text += "; Layer " + juce::String((int) l + 1) + ": No sample found for this layer";
     rollLabel.setText(text, juce::dontSendNotification);
 }
 
@@ -371,7 +372,7 @@ void KlayEditor::refreshFromKick()
         r.mute.setToggleState(l.mute, juce::dontSendNotification);
         r.solo.setToggleState(l.solo, juce::dontSendNotification);
         r.follow.setToggleState(l.pitchFollow, juce::dontSendNotification);
-        r.bin.setEnabled(model::canBin(kick, i) && ! l.samplePath.empty()); // FR-112: disabled when locked
+        r.bin.setEnabled(model::canBin(kick, i) && ! (l == model::makeDefaultLayer(static_cast<int>(i)))); // FR-112: disabled when locked
         r.reforge.setEnabled(! l.lock);                                     // FR-143
     }
     updateStatus();

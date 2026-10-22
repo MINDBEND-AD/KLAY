@@ -167,7 +167,7 @@ TEST_CASE("Forge: the same seed gives the same roll; different seeds vary", "[co
     CHECK(kicks.size() == 4); // every Kick sample is drawn by some seed
 }
 
-TEST_CASE("Forge replaces only the sample: fader, envelope, offset, trims, pitch, length, routing, mute/solo stay",
+TEST_CASE("Forge replaces the sample and resets its trims; fader, envelope, offset, pitch, length, routing, mute/solo stay",
           "[core][random][FR-141][FR-143]")
 {
     const random::RolePools pools(testLibrary());
@@ -178,10 +178,13 @@ TEST_CASE("Forge replaces only the sample: fader, envelope, offset, trims, pitch
     for (size_t i = 0; i < kick.layers.size(); ++i)
     {
         auto expected = before.layers[i];
-        expected.samplePath = kick.layers[i].samplePath;
-        CHECK(kick.layers[i] == expected);
-        if (i >= 3)
-            CHECK(kick.layers[i].samplePath == before.layers[i].samplePath); // outside the template: untouched
+        if (i < 3) // rolled: new sample, trims reset (PO decision 2026-10-22)
+        {
+            expected.samplePath = kick.layers[i].samplePath;
+            expected.startTrimMs = 0.0;
+            expected.endTrimMs = 0.0;
+        }
+        CHECK(kick.layers[i] == expected); // outside the template: untouched, trims included
     }
     CHECK(kick.settings == before.settings);
 }
@@ -279,4 +282,18 @@ TEST_CASE("Roll template: default layers 1-3, saved with the kick, sanitised", "
     const auto old = model::kickFromJson(R"({"schemaVersion": 2, "settings": {}})");
     REQUIRE(old);
     CHECK(old->settings.rollTemplate == std::vector<int>{ 0, 1, 2 });
+}
+
+TEST_CASE("Reforge resets the trims, also when the pool's only sample is drawn again", "[core][random][FR-142]")
+{
+    const random::RolePools pools(testLibrary());
+    auto kick = model::makeDefaultKick();
+    kick.layers[4].samplePath = "lib/Transient/t1.wav"; // the only Transient sample
+    kick.layers[4].startTrimMs = 4.0;
+    kick.layers[4].endTrimMs = 6.0;
+    const auto result = random::reforge(kick, 4, pools, 3);
+    CHECK(result.changed == std::vector<size_t>{ 4 });
+    CHECK(kick.layers[4].samplePath == "lib/Transient/t1.wav");
+    CHECK(kick.layers[4].startTrimMs == 0.0);
+    CHECK(kick.layers[4].endTrimMs == 0.0);
 }

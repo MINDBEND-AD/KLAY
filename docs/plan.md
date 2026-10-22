@@ -355,16 +355,17 @@ dev editor with the factory library per `docs/checks/M2.md`. Tag `m2-done`.
   distributions are implementation-defined, so a seed would not reproduce across compilers, FR-147); a UT pins the
   reference outputs. Each layer draws with its own seed derived from the roll seed and the layer index, so a Reforge
   with seed s draws what a Forge with seed s draws for that layer. `random::forge` / `reforge` change only
-  `samplePath`: start and end trim stay as well (FR-141 lists what stays; trims are not a sample choice). A layer
-  whose role pool is empty, or that is locked, is left as it is and reported in the result. Roll template
+  `samplePath`: start and end trim stay as well (FR-141 lists what stays; trims are not a sample choice).
+  **Changed 2026-10-22 (PO):** a roll resets the rolled layer's start and end trim (also when the same sample comes
+  back); see the deviations log. A layer whose role pool is empty, or that is locked, is left as it is and reported in the result. Roll template
   (FR-146): `settings.rollTemplate`, 0-based layer indices, default `[0, 1, 2]`, saved with the kick (an additive
   field, schema stays 2; older files get the default). The processor draws a fresh seed per roll from a
   `random_device`-seeded state and keeps the last one (`getLastRollSeed`); `forge(seed)` reproduces a roll.
 - 2.4: `model::toggleLock`, `canBin` / `binLayer`, `renameLayer` join the M1 `clickMute` / `clickSolo` (now bounds-checked).
-  **Interpretation, PO to confirm:** the bin (FR-112 "clears the layer to empty") removes only the sample; name, role,
-  fader, envelope, offset, trims, mode values, routing and switches stay, in line with rolls that replace only the
-  sample. Rename drops leading/trailing whitespace and control characters; an empty name restores the default name;
-  the role does not follow a rename. Selection (FR-113) is processor state (`selectLayer`, layer 1 by default), not
+  Bin (FR-112, PO decision 2026-10-22, replacing the first "sample only" version): resets the whole layer to
+  `makeDefaultLayer` (sample, values, trims, envelope, routing, name, role, Mute / Solo / Lock / pitch-follow); see the
+  deviations log. Rename drops leading/trailing whitespace and control characters; an empty name restores the
+  default name; the role does not follow a rename. Selection (FR-113) is processor state (`selectLayer`, layer 1 by default), not
   part of the kick, the saved state or the undo history.
 - 2.5: `core/model/UndoHistory` stores the whole kick before and after each step (a kick is a few KB), so every
   model and settings edit, including rolls, mode switches (FR-106) and the roll template, is undoable by construction;
@@ -466,3 +467,4 @@ Won't (v1): FR-261, FR-307, FR-308, FR-326, FR-334, C-003, C-004.
 | Date | Task | Deviation | Reason | PO approval |
 | --- | --- | --- | --- | --- |
 | 2026-10-19 | 1.8, 1.16 (CI) | Timing targets (NFR-004 re-render, NFR-015 cache build via AC-2, NFR-002 playback via AC-3) are enforced locally only, on the reference machine. CI sets `KLAY_CI=1`: those checks print their numbers and warn when over target but do not fail (`tests/TimingGate.h`); a non-blocking CI step runs the `[bm]` tests so the numbers are in the log. AC-1 (RAM) and AC-4 (latency) stay hard gates everywhere | The first CI runs of M1 (39253172615, 39271836490) failed only on AC-2 with 3 follow buses: root ±2 took 100.2 and 108 ms on the shared runner against 100 ms (46 ms on the dev machine). The targets are defined for the reference machine, and spec §12 puts performance checks in a benchmark harness | PO, 2026-10-19 |
+| 2026-10-22 | 2.3, 2.4, 2.7 | Bin (FR-112) resets the whole layer to its defaults, not only the sample; a roll (FR-141, FR-142) also resets the rolled layer's start and end trim; a layer with an empty role pool stays as it is and the dev editor shows "No sample found for this layer". Spec wording of FR-112 and FR-141 to follow (Claude Docs and `docs/spec.md`) | PO decisions on the M2 check (`docs/checks/M2.md`, decisions 1–3) | PO, 2026-10-22 |

@@ -90,9 +90,12 @@ bool canBin(const Kick& kick, size_t index) noexcept
 
 bool binLayer(Kick& kick, size_t index)
 {
-    if (! canBin(kick, index) || kick.layers[index].samplePath.empty())
+    if (! canBin(kick, index))
         return false;
-    kick.layers[index].samplePath.clear();
+    auto fresh = makeDefaultLayer(static_cast<int>(index)); // FR-112, PO decision 2026-10-22: the whole layer
+    if (kick.layers[index] == fresh)
+        return false;
+    kick.layers[index] = std::move(fresh);
     return true;
 }
 

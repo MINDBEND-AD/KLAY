@@ -40,9 +40,12 @@ namespace
         }
         Rng rng(layerSeed(seed, index));
         auto drawn = drawSample(pool, layer.samplePath, rng);
-        if (drawn != layer.samplePath)
+        // PO decision 2026-10-22: a roll also resets the start and end trim (they belong to the old sample).
+        if (drawn != layer.samplePath || layer.startTrimMs != 0.0 || layer.endTrimMs != 0.0)
             result.changed.push_back(index);
         layer.samplePath = std::move(drawn);
+        layer.startTrimMs = 0.0;
+        layer.endTrimMs = 0.0;
     }
 } // namespace
 

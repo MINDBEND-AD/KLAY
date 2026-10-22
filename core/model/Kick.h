@@ -150,8 +150,9 @@ void clickSolo(Kick& kick, size_t index, bool shift);
 // FR-101, FR-143: Lock protects a layer from rolls and from the bin (FR-112). Out-of-range indices are ignored.
 void toggleLock(Kick& kick, size_t index);
 
-// FR-112: the bin empties a layer: its sample is removed (the card shows the empty state), every other setting
-// stays. Disabled while the layer is locked. Returns whether the layer changed.
+// FR-112 (PO decision 2026-10-22): the bin resets the whole layer to its defaults (makeDefaultLayer): sample
+// removed, fader, knob values, mode, offset, trims, envelope, routing, name and role back to default, Mute, Solo,
+// Lock and pitch-follow off. Disabled while the layer is locked. Returns whether the layer changed.
 bool canBin(const Kick& kick, size_t index) noexcept;
 bool binLayer(Kick& kick, size_t index);
 

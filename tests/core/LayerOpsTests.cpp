@@ -61,14 +61,28 @@ TEST_CASE("Solo: given layer 2 soloed, Solo on layer 3 leaves only layer 3; Shif
     CHECK(audible(shifted) == std::vector<bool>{ false, true, false, false, false, false });
 }
 
-TEST_CASE("Lock and bin: the bin empties a layer and is disabled while it is locked", "[core][model][FR-112][FR-101]")
+TEST_CASE("Lock and bin: the bin resets the whole layer and is disabled while it is locked", "[core][model][FR-112][FR-101]")
 {
     auto kick = model::makeDefaultKick();
     auto& layer = kick.layers[2];
     layer.samplePath = "x.wav";
+    layer.name = "Grit";
+    layer.role = model::Role::any;
     layer.faderDb = -6.0f;
     layer.offsetMs = 4.0;
+    layer.startTrimMs = 3.0;
+    layer.endTrimMs = 5.0;
+    layer.mode = model::LayerMode::tape;
+    layer.length = 2.0;
+    layer.pitchSemitones = 4;
+    layer.pitchCents = -20;
+    layer.tapeSpeed = 1.5;
+    layer.routing = model::Routing::aux1;
+    layer.mute = true;
+    layer.solo = true;
+    layer.pitchFollow = true;
     layer.envelope.points = { { 0.0, 1.0f, 0.0f }, { 20.0, 0.5f, 0.0f } };
+    kick.layers[0].solo = true;
 
     model::toggleLock(kick, 2);
     CHECK(kick.layers[2].lock);
@@ -80,11 +94,18 @@ TEST_CASE("Lock and bin: the bin empties a layer and is disabled while it is loc
     model::toggleLock(kick, 2);
     CHECK_FALSE(kick.layers[2].lock);
     CHECK(model::canBin(kick, 2));
-    auto expected = kick.layers[2];
-    expected.samplePath.clear();
+    const auto others = kick;
     CHECK(model::binLayer(kick, 2));
-    CHECK(kick.layers[2] == expected); // only the sample goes; the layer's settings stay
-    CHECK_FALSE(model::binLayer(kick, 2)); // already empty: nothing to do
+    // PO decision 2026-10-22: sample, fader, knobs, mode, offset, trims, envelope, routing, name, role, Mute, Solo,
+    // Lock and pitch-follow all back to the defaults of layer 3.
+    CHECK(kick.layers[2] == model::makeDefaultLayer(2));
+    for (const size_t i : { 0u, 1u, 3u, 4u, 5u })
+        CHECK(kick.layers[i] == others.layers[i]); // other layers untouched (layer 1 keeps its Solo)
+    CHECK_FALSE(model::binLayer(kick, 2)); // already default: nothing to do
+
+    kick.layers[4].faderDb = -12.0f; // no sample, but changed settings: the bin still resets them
+    CHECK(model::binLayer(kick, 4));
+    CHECK(kick.layers[4] == model::makeDefaultLayer(4));
 
     CHECK_FALSE(model::canBin(kick, 99));
     model::toggleLock(kick, 99); // ignored
