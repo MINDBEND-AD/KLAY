@@ -9,6 +9,10 @@ add_library(klay_core STATIC
     model/KickJson.h
     library/KeyDetector.cpp
     library/KeyDetector.h
+    library/LibraryScanner.cpp
+    library/LibraryScanner.h
+    library/SampleIndex.cpp
+    library/SampleIndex.h
     dsp/Fft.cpp
     dsp/Fft.h
     render/Envelope.cpp

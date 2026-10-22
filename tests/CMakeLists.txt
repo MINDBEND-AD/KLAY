@@ -20,6 +20,7 @@ add_executable(klay_core_tests
     core/CacheTests.cpp
     core/KeyDetectionTests.cpp
     core/KickModelTests.cpp
+    core/LibraryTests.cpp
     core/PlayerTests.cpp
     core/RenderTests.cpp
     core/StretchTests.cpp
@@ -35,9 +36,15 @@ add_executable(klay_tests
     plugin/AdapterTests.cpp
     plugin/AssumptionChecks.cpp
     plugin/EditorTests.cpp
+    plugin/LibraryFixture.h
+    plugin/LibraryPluginTests.cpp
     plugin/PlaybackTests.cpp
+    plugin/ProcessMemory.h
     plugin/ProcessorTests.cpp)
 target_link_libraries(klay_tests PRIVATE klay_core klay_rt_harness KLAY Catch2::Catch2WithMain)
+if(WIN32)
+    target_link_libraries(klay_tests PRIVATE psapi) # NFR-007 RAM checks
+endif()
 target_include_directories(klay_tests PRIVATE
     ${PROJECT_SOURCE_DIR}
     $<TARGET_PROPERTY:KLAY,INCLUDE_DIRECTORIES>)

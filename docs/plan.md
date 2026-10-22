@@ -324,7 +324,7 @@ which may be confused with the layer's Tape mode in UI text and docs.
 
 | # | Task | IDs | Verify |
 |---|---|---|---|
-| 2.1 | Sample index: scan Role → sub-folder → files; metadata (role, folder, root, length, peak) built in the background; disk cache with mtime invalidation | FR-160, FR-165, NFR-007, NFR-008 | UT on a fixture tree: built, reused, invalidated; BM: startup with cache < 1.5 s, RAM < 300 MB |
+| 2.1 ✓ | Sample index: scan Role → sub-folder → files; metadata (role, folder, root, length, peak) built in the background; disk cache with mtime invalidation | FR-160, FR-165, NFR-007, NFR-008 | UT on a fixture tree: built, reused, invalidated; BM: startup with cache < 1.5 s, RAM < 300 MB |
 | 2.2 | Role pools; layer roles default from name, "Any" role | FR-140 | UT |
 | 2.3 | Seeded RNG + roll engine: Forge over the roll template, Reforge per layer, locked layers untouched, only the sample replaced | FR-141, FR-142, FR-143, FR-146, FR-147 | UT: Gherkin "layer 2 locked, layer 3 Crunch"; same seed gives the same roll; fader/envelope/offset/pitch/stretch/routing unchanged |
 | 2.4 | Layer operations: lock, mute (Shift unmutes all), exclusive solo (Shift adds), bin (disabled when locked), select, rename | FR-110–114 | UT incl. the Gherkin solo example |
@@ -334,6 +334,20 @@ which may be confused with the layer's Tape mode in UI text and docs.
 
 **Exit M2:** all UT/RT pass and are shown; NFR-005 and NFR-008 benchmarks pass; the PO runs UC-1 and UC-2 on the
 dev editor with the factory library per `docs/checks/M2.md`. Tag `m2-done`.
+
+**M2 notes and deviations (Claude Code, 2026-10-22)**
+- 2.1: `core/library/SampleIndex` scans `<root>/<Role>/<sub-folders…>/<file>` (role folders matched case-insensitively,
+  other top-level folders ignored; files directly in a role folder have an empty sub-folder, as in the current
+  staging library) for .wav .aif .aiff .flac (FR-161). Metadata per file (FR-165): role, sub-folder, length, sample
+  peak, root (the FR-120 detector on the mono mix at the file rate), plus mtime and size. The disk cache
+  `%APPDATA%\MINDBEND AD\Klaymore\library-index.json` (versioned JSON) is reused per file when mtime and size match;
+  changed and new files are analysed again on background threads (half the cores), removed ones dropped.
+  `core/library/LibraryScanner` publishes the cached index at once, then the checked one, and writes the cache back.
+  Decoding is the JUCE adapter `adapters/SampleAnalyzer` (C-007). Library folder (decision 5): environment variable
+  `KLAY_LIBRARY_PATH`, else `%APPDATA%\MINDBEND AD\Klaymore\library-path.txt` (written by the dev editor in 2.7),
+  else none. No library audio is held by the index; parts load lazily in the render engine (NFR-007). BM (dev machine,
+  Release, 600 synthetic files): first scan 1.65 s; startup with the cached index ready in 10 ms (target < 1.5 s);
+  RAM of the instance after startup 1.3 MB (target < 300 MB).
 
 ## M3 Visualiser UI
 

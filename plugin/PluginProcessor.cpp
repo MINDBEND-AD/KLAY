@@ -4,10 +4,14 @@
 #include "plugin/PluginEditor.h"
 
 #include "adapters/JuceResampler.h"
+#include "adapters/SampleAnalyzer.h"
 #include "adapters/SampleLoader.h"
 #include "core/model/KickJson.h"
 #include "core/render/TimeBase.h"
 #include "core/rt/RtGuard.h"
+
+#include <fstream>
+#include <thread>
 
 namespace klay
 {
@@ -24,9 +28,24 @@ std::shared_ptr<const render::SampleData> SampleCache::get(const std::string& pa
     return result.sample;
 }
 
-KlayProcessor::KlayProcessor()
+KlayProcessor::KlayProcessor(ProcessorOptions options)
     : AudioProcessor(BusesProperties().withOutput("Output", juce::AudioChannelSet::stereo(), true))
 {
+    dataDir = options.dataDir ? *options.dataDir : defaultDataDir();
+    if (options.libraryRoot)
+        libraryRoot = *options.libraryRoot;
+    else if (const auto env = juce::SystemStats::getEnvironmentVariable("KLAY_LIBRARY_PATH", {}); env.isNotEmpty())
+        libraryRoot = library::fromUtf8(env.toStdString());
+    else if (std::ifstream in(dataDir / "library-path.txt"); in)
+    {
+        std::string line;
+        std::getline(in, line);
+        while (! line.empty() && (line.back() == '\r' || line.back() == ' '))
+            line.pop_back();
+        libraryRoot = library::fromUtf8(line);
+    }
+    startLibrary(); // NFR-008: the cached index is published from the background thread, startup does not wait
+
     engine = std::make_unique<render::KickEngine>(render::RenderEngine::Config{
         [this](const std::string& path) { return sampleCache.get(path, currentSampleRate); },
         adapters::lagrangeResamplerFactory(), true });
@@ -37,6 +56,7 @@ KlayProcessor::KlayProcessor()
 KlayProcessor::~KlayProcessor()
 {
     stopTimer();
+    library.stop();
     player.reset(*engine, engine.get());
     engine.reset();
 }
@@ -149,6 +169,35 @@ juce::AudioProcessorEditor* KlayProcessor::createEditor()
 std::uint64_t KlayProcessor::requestRender()
 {
     return engine->requestRender(kick, currentSampleRate, getEffectiveBpm());
+}
+
+std::filesystem::path KlayProcessor::defaultDataDir()
+{
+    // Plan decision 4: user data in %APPDATA%\MINDBEND AD\Klaymore.
+    const auto dir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+                         .getChildFile("MINDBEND AD").getChildFile("Klaymore");
+    return library::fromUtf8(dir.getFullPathName().toStdString());
+}
+
+void KlayProcessor::startLibrary()
+{
+    // FR-165: metadata is built on background threads (at most half the cores, so a host stays responsive).
+    const unsigned threads = std::max(1u, std::thread::hardware_concurrency() / 2);
+    library.start({ libraryRoot, libraryRoot.empty() ? std::filesystem::path() : dataDir / "library-index.json",
+                    &adapters::analyseSample, threads });
+}
+
+void KlayProcessor::setLibraryRoot(const std::filesystem::path& root, bool persist)
+{
+    libraryRoot = root;
+    if (persist)
+    {
+        std::error_code ec;
+        std::filesystem::create_directories(dataDir, ec);
+        std::ofstream out(dataDir / "library-path.txt", std::ios::binary | std::ios::trunc);
+        out << library::toUtf8(root) << '\n';
+    }
+    startLibrary();
 }
 
 double KlayProcessor::getEffectiveBpm() const

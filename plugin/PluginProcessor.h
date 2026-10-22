@@ -2,6 +2,7 @@
 // LICENSE-GPL: KLAY own source, uses JUCE (AGPLv3). See THIRD_PARTY_LICENSES.md (C-006).
 #pragma once
 
+#include "core/library/LibraryScanner.h"
 #include "core/model/Kick.h"
 #include "core/render/KickEngine.h"
 #include "core/render/KickPlayer.h"
@@ -10,9 +11,11 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 
 #include <atomic>
+#include <filesystem>
 #include <map>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <vector>
 
 namespace klay
@@ -30,12 +33,22 @@ private:
     std::map<std::pair<std::string, double>, std::shared_ptr<const render::SampleData>> loaded;
 };
 
+// Where the processor finds the sample library and keeps its user data (plan decisions 4 and 5). Unset fields use
+// the defaults: data in %APPDATA%/MINDBEND AD/Klaymore, library folder from the KLAY_LIBRARY_PATH environment
+// variable, else from <data>/library-path.txt (written by setLibraryRoot), else none.
+struct ProcessorOptions
+{
+    std::optional<std::filesystem::path> libraryRoot;
+    std::optional<std::filesystem::path> dataDir;
+};
+
 // M1 instrument (spec §10 plugin/): MIDI → monophonic kick player over the background render cache. Edits change
 // the model on the message thread and request a re-render; the audio thread only reads published renders.
 class KlayProcessor final : public juce::AudioProcessor, private juce::Timer
 {
 public:
-    KlayProcessor();
+    KlayProcessor() : KlayProcessor(ProcessorOptions{}) {}
+    explicit KlayProcessor(ProcessorOptions options);
     ~KlayProcessor() override;
 
     void prepareToPlay(double sampleRate, int maximumExpectedSamplesPerBlock) override;
@@ -81,12 +94,23 @@ public:
     render::KickEngine& getEngine() noexcept { return *engine; }
     double getEffectiveBpm() const;
 
+    // FR-160, FR-165: the sample library index, kept up to date in the background (task 2.1).
+    library::LibraryScanner& getLibrary() noexcept { return library; }
+    const std::filesystem::path& getLibraryRoot() const noexcept { return libraryRoot; }
+    const std::filesystem::path& getDataDir() const noexcept { return dataDir; }
+    // Points the library at a new folder and re-scans; `persist` stores it in <data>/library-path.txt.
+    void setLibraryRoot(const std::filesystem::path& root, bool persist = true);
+    static std::filesystem::path defaultDataDir();
+
 private:
     void timerCallback() override;
     std::uint64_t requestRender();
+    void startLibrary();
 
     model::Kick kick = model::makeDefaultKick();
     std::vector<std::string> loadWarnings;
+    std::filesystem::path dataDir, libraryRoot;
+    library::LibraryScanner library;
     SampleCache sampleCache;
     std::unique_ptr<render::KickEngine> engine;
     render::TempoDebouncer tempo;
