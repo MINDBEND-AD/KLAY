@@ -328,7 +328,7 @@ which may be confused with the layer's Tape mode in UI text and docs.
 | 2.2 ✓ | Role pools; layer roles default from name, "Any" role | FR-140 | UT |
 | 2.3 ✓ | Seeded RNG + roll engine: Forge over the roll template, Reforge per layer, locked layers untouched, only the sample replaced | FR-141, FR-142, FR-143, FR-146, FR-147 | UT: Gherkin "layer 2 locked, layer 3 Crunch"; same seed gives the same roll; fader/envelope/offset/pitch/stretch/routing unchanged |
 | 2.4 ✓ | Layer operations: lock, mute (Shift unmutes all), exclusive solo (Shift adds), bin (disabled when locked), select, rename | FR-110–114 | UT incl. the Gherkin solo example |
-| 2.5 | Undo manager: commands for all model and settings edits, ≥ 50 steps, one gesture = one step | FR-145, FR-239 | UT: 60 edits undone/redone gives identical state |
+| 2.5 ✓ | Undo manager: commands for all model and settings edits, ≥ 50 steps, one gesture = one step | FR-145, FR-239 | UT: 60 edits undone/redone gives identical state |
 | 2.6 | Roll latency: chosen samples loaded on a background thread; measure | NFR-005 | BM: Forge to audible < 100 ms |
 | 2.7 | Dev editor extension: Forge, Reforge per layer, lock, undo/redo | — (temporary) | PO |
 
@@ -366,6 +366,13 @@ dev editor with the factory library per `docs/checks/M2.md`. Tag `m2-done`.
   sample. Rename drops leading/trailing whitespace and control characters; an empty name restores the default name;
   the role does not follow a rename. Selection (FR-113) is processor state (`selectLayer`, layer 1 by default), not
   part of the kick, the saved state or the undo history.
+- 2.5: `core/model/UndoHistory` stores the whole kick before and after each step (a kick is a few KB), so every
+  model and settings edit, including rolls, mode switches (FR-106) and the roll template, is undoable by construction;
+  100 steps (FR-145: ≥ 50), the oldest dropped beyond that; no-op edits make no step; a new edit clears redo.
+  `KlayProcessor::edit(label, change)` is the one entry point for edits; `beginGesture` / `endGesture` (nestable)
+  turn a mouse-down-to-mouse-up gesture into one step (FR-239) while its edits apply and render live; Forge and
+  Reforge are one step each. A host state restore (`setStateInformation`) clears the history. FX chains join the
+  snapshot when they join the kick in M4. The dev editor moves onto `edit()` in 2.7.
 
 ## M3 Visualiser UI
 

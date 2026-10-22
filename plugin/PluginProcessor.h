@@ -4,6 +4,7 @@
 
 #include "core/library/LibraryScanner.h"
 #include "core/model/Kick.h"
+#include "core/model/UndoHistory.h"
 #include "core/random/Roll.h"
 #include "core/render/KickEngine.h"
 #include "core/render/KickPlayer.h"
@@ -14,6 +15,7 @@
 #include <algorithm>
 #include <atomic>
 #include <filesystem>
+#include <functional>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -82,8 +84,20 @@ public:
 
     // ---- message thread ----
     const model::Kick& getKick() const noexcept { return kick; }
-    // Replaces the kick and re-renders; returns the render generation.
+    // Replaces the kick and re-renders without an undo step (host state restore, tests); returns the render
+    // generation. Edits go through edit() instead.
     std::uint64_t setKick(model::Kick newKick);
+
+    // FR-145, FR-239: every model and settings edit. `change` edits a copy of the kick; the result is sanitised,
+    // applied and re-rendered, and recorded as one undo step, unless a gesture is open: between beginGesture() and
+    // endGesture() (mouse down to mouse up) edits apply live and the whole gesture becomes one step. Returns whether
+    // the kick changed.
+    bool edit(const std::string& label, const std::function<void(model::Kick&)>& change);
+    void beginGesture(const std::string& label);
+    void endGesture();
+    bool undo();
+    bool redo();
+    const model::UndoHistory& getUndoHistory() const noexcept { return history; }
     // FR-116 audition API: plays the kick untransposed at the start of the next block.
     void triggerAudition() noexcept { auditionRequested.store(true, std::memory_order_release); }
     // FR-002: checks the host tempo seen by the audio thread and re-renders once a change has settled. Runs from a
@@ -129,6 +143,10 @@ private:
     std::uint64_t poolsVersion = ~std::uint64_t{ 0 };
     std::uint64_t seedState = 0, lastRollSeed = 0;
     size_t selectedLayer = 0;
+    model::UndoHistory history;
+    model::Kick gestureStart;
+    std::string gestureLabel;
+    int gestureDepth = 0;
     SampleCache sampleCache;
     std::unique_ptr<render::KickEngine> engine;
     render::TempoDebouncer tempo;

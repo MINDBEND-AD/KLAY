@@ -30,6 +30,7 @@ add_executable(klay_core_tests
     core/TimingGateTests.cpp
     core/TestSignals.h
     core/TimeEnvelopeTests.cpp
+    core/UndoTests.cpp
     core/RtHarnessTests.cpp)
 target_link_libraries(klay_core_tests PRIVATE klay_core klay_rt_harness Catch2::Catch2WithMain)
 
@@ -43,7 +44,8 @@ add_executable(klay_tests
     plugin/LibraryPluginTests.cpp
     plugin/PlaybackTests.cpp
     plugin/ProcessMemory.h
-    plugin/ProcessorTests.cpp)
+    plugin/ProcessorTests.cpp
+    plugin/UndoPluginTests.cpp)
 target_link_libraries(klay_tests PRIVATE klay_core klay_rt_harness KLAY Catch2::Catch2WithMain)
 if(WIN32)
     target_link_libraries(klay_tests PRIVATE psapi) # NFR-007 RAM checks

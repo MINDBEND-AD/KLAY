@@ -202,20 +202,16 @@ const random::RolePools& KlayProcessor::getRolePools()
 random::RollResult KlayProcessor::forge(std::optional<std::uint64_t> seed)
 {
     lastRollSeed = seed ? *seed : random::Rng::splitMix(seedState);
-    auto next = kick;
-    auto result = random::forge(next, getRolePools(), lastRollSeed);
-    if (! result.changed.empty())
-        setKick(std::move(next));
+    random::RollResult result;
+    edit("Forge", [&](model::Kick& k) { result = random::forge(k, getRolePools(), lastRollSeed); });
     return result;
 }
 
 random::RollResult KlayProcessor::reforge(size_t layer, std::optional<std::uint64_t> seed)
 {
     lastRollSeed = seed ? *seed : random::Rng::splitMix(seedState);
-    auto next = kick;
-    auto result = random::reforge(next, layer, getRolePools(), lastRollSeed);
-    if (! result.changed.empty())
-        setKick(std::move(next));
+    random::RollResult result;
+    edit("Reforge", [&](model::Kick& k) { result = random::reforge(k, layer, getRolePools(), lastRollSeed); });
     return result;
 }
 
@@ -242,6 +238,63 @@ std::uint64_t KlayProcessor::setKick(model::Kick newKick)
     model::sanitise(newKick);
     kick = std::move(newKick);
     return requestRender();
+}
+
+bool KlayProcessor::edit(const std::string& label, const std::function<void(model::Kick&)>& change)
+{
+    auto next = kick;
+    change(next);
+    model::sanitise(next);
+    if (next == kick)
+        return false;
+    const auto before = kick;
+    setKick(std::move(next));
+    if (gestureDepth == 0)
+        history.record(before, kick, label);
+    return true;
+}
+
+void KlayProcessor::beginGesture(const std::string& label)
+{
+    if (gestureDepth++ == 0)
+    {
+        gestureStart = kick;
+        gestureLabel = label;
+    }
+}
+
+void KlayProcessor::endGesture()
+{
+    if (gestureDepth == 0)
+        return;
+    if (--gestureDepth == 0)
+        history.record(gestureStart, kick, gestureLabel); // FR-239: one gesture, one step
+}
+
+bool KlayProcessor::undo()
+{
+    if (gestureDepth > 0)
+    {
+        gestureDepth = 1;
+        endGesture();
+    }
+    auto state = history.undo();
+    if (state)
+        setKick(std::move(*state));
+    return state.has_value();
+}
+
+bool KlayProcessor::redo()
+{
+    if (gestureDepth > 0)
+    {
+        gestureDepth = 1;
+        endGesture();
+    }
+    auto state = history.redo();
+    if (state)
+        setKick(std::move(*state));
+    return state.has_value();
 }
 
 void KlayProcessor::pollHostTempo(double nowMs)
@@ -280,6 +333,8 @@ void KlayProcessor::setStateInformation(const void* data, int sizeInBytes)
     {
         loadWarnings = std::move(warnings);
         setKick(std::move(*parsed));
+        history.clear(); // a host restoring its session is not an edit; earlier steps belong to another state
+        gestureDepth = 0;
     }
 }
 
