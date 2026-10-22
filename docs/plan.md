@@ -459,7 +459,8 @@ Tag `m5-done`.
 ## Not in the MVP (per spec §13)
 M6: 12 layers (FR-100 expansion), user libraries (FR-163, FR-164), OGG/MP3 (FR-161 Could), roll folder filter
 (FR-148), preset audition (FR-243), remaining FX modules, FX automation slots (Q13), colour themes (UI-014).
-Won't (v1): FR-261, FR-307, FR-308, FR-326, FR-334, C-003, C-004.
+Won't (v1): FR-261, FR-307, FR-308, FR-326, FR-334, C-003, C-004. Version 2 (PO, 2026-10-22): FR-167 sample tagging with a
+predefined category list.
 
 ## Deviations log
 (Filled in during the build: date, task, deviation, reason, PO approval.)
@@ -467,4 +468,4 @@ Won't (v1): FR-261, FR-307, FR-308, FR-326, FR-334, C-003, C-004.
 | Date | Task | Deviation | Reason | PO approval |
 | --- | --- | --- | --- | --- |
 | 2026-10-19 | 1.8, 1.16 (CI) | Timing targets (NFR-004 re-render, NFR-015 cache build via AC-2, NFR-002 playback via AC-3) are enforced locally only, on the reference machine. CI sets `KLAY_CI=1`: those checks print their numbers and warn when over target but do not fail (`tests/TimingGate.h`); a non-blocking CI step runs the `[bm]` tests so the numbers are in the log. AC-1 (RAM) and AC-4 (latency) stay hard gates everywhere | The first CI runs of M1 (39253172615, 39271836490) failed only on AC-2 with 3 follow buses: root ±2 took 100.2 and 108 ms on the shared runner against 100 ms (46 ms on the dev machine). The targets are defined for the reference machine, and spec §12 puts performance checks in a benchmark harness | PO, 2026-10-19 |
-| 2026-10-22 | 2.3, 2.4, 2.7 | Bin (FR-112) resets the whole layer to its defaults, not only the sample; a roll (FR-141, FR-142) also resets the rolled layer's start and end trim; a layer with an empty role pool stays as it is and the dev editor shows "No sample found for this layer". Spec wording of FR-112 and FR-141 to follow (Claude Docs and `docs/spec.md`) | PO decisions on the M2 check (`docs/checks/M2.md`, decisions 1–3) | PO, 2026-10-22 |
+| 2026-10-22 | 2.3, 2.4, 2.7 | Bin (FR-112) resets the whole layer to its defaults, not only the sample; a roll (FR-141, FR-142) also resets the rolled layer's start and end trim; a layer with an empty role pool stays as it is and the dev editor shows "No sample found for this layer". Spec v0.11 (2026-10-22, Claude Docs and `docs/spec.md`): FR-112, FR-141, FR-142 reworded, FR-160 both layouts, FR-167 sample tagging in version 2 | PO decisions on the M2 check (`docs/checks/M2.md`, decisions 1–3) | PO, 2026-10-22 |

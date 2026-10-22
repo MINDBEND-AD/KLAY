@@ -4,7 +4,7 @@ Oct 19, 2026 · @Bernard
 
 ## 1. Document control & purpose
 
-This is version 0.10 (draft) of the requirements and specification for KLAY (working title), a layer-based kick drum plugin inspired by a commercial layer-based kick plugin. Its job is to give the coding session a single, testable source of truth.
+This is version 0.11 (draft) of the requirements and specification for KLAY (working title), a layer-based kick drum plugin inspired by a commercial layer-based kick plugin. Its job is to give the coding session a single, testable source of truth.
 
 - **Scope:** a VST3 instrument plugin for Windows that stacks sample layers into a kick, processes it through a modular FX rack, and exports the result. Version 1 is a pure sample player with no genre style targets.
 - **Out of scope (v1):** synthesis (planned for version 2), genre style targets, macOS / AU / AAX, standalone app, copy protection and licensing, distribution, stem export (version 2), sequencing.
@@ -117,7 +117,7 @@ Requirements are grouped by subsystem; each maps to a module in section 10.
 | FR-109 | Autogain (on/off in Settings, default On): one gain, computed from the summed pre-FX buses (Main, Aux 1, Aux 2) and applied equally to all of them, normalises the rendered stack to a target peak (default −0.3 dBFS) before the FX chains | Should |
 | FR-110 | Mute per layer; several layers can be muted at once; Shift+click on any Mute unmutes all layers when at least one is muted | Must |
 | FR-111 | Solo per layer is exclusive: a new Solo replaces the previous one; Shift+click adds further Solos; Mute beats Solo | Must |
-| FR-112 | Bin icon clears the layer to empty; disabled while the layer is locked; undoable | Must |
+| FR-112 | Bin icon resets the layer to its defaults: the sample is removed; fader, layer knob values and mode, offset, start and end trim, volume envelope, routing, name and role return to their defaults; Mute, Solo, Lock and pitch-follow are off. Disabled while the layer is locked; undoable (Undo restores the layer exactly) | Must |
 | FR-113 | Clicking a layer card selects it; layer 1 is selected by default | Must |
 | FR-114 | Default layer names: 1 Kick, 2 Rumble, 3 Drive, 4 Crunch, 5 Transient, 6 Texture, 7–12 "Layer N"; double-click renames any layer. Layer 1 (Kick) is the key layer | Must |
 | FR-115 | Monophonic playback: a new note-on cuts the ringing kick with a 5 ms fade | Must |
@@ -149,8 +149,8 @@ Requirements are grouped by subsystem; each maps to a module in section 10.
 | ID | Requirement | Priority |
 | --- | --- | --- |
 | FR-140 | Each layer has a role (Kick, Rumble, Drive, Crunch, Transient, Texture or Any); layers 1–6 default to the role of their name; rolls draw only from that role's pool | Must |
-| FR-141 | Forge: draw a new sample for each unlocked layer in the roll template (FR-146) from its role pool; all other layers stay as they are, or empty. Only samples are replaced — fader, envelope, offset, pitch, stretch, routing and FX stay | Must |
-| FR-142 | Reforge one layer (↻ on its card) from its role's pool; as FR-141, only the sample is replaced | Must |
+| FR-141 | Forge: draw a new sample for each unlocked layer in the roll template (FR-146) from its role pool; all other layers stay as they are, or empty. Only samples are replaced, and a rolled layer's start and end trim reset to 0 (also when the same sample is drawn again) — fader, envelope, offset, pitch, stretch, routing and FX stay. A layer whose role pool is empty stays as it is and shows “No sample found for this layer” | Must |
+| FR-142 | Reforge one layer (↻ on its card) from its role's pool; as FR-141, only the sample is replaced and its trims are reset | Must |
 | FR-143 | Locked layers are never changed by rolls; mute/solo persist | Must |
 | FR-144 | Dropped (Chaos option no longer required) | — |
 | FR-145 | Undo/redo of all edits — layers, envelopes, routing, FX chains and settings (≥ 50 steps); Ctrl+Z / Ctrl+Shift+Z | Must |
@@ -162,13 +162,14 @@ Requirements are grouped by subsystem; each maps to a module in section 10.
 
 | ID | Requirement | Priority |
 | --- | --- | --- |
-| FR-160 | Factory library (provided by the product owner) organised as Role → sub-folder → files (roles: Kick, Rumble, Drive, Crunch, Transient, Texture) | Must |
+| FR-160 | Factory library (provided by the product owner) organised as Role → sub-folder → files or Role → files; both layouts are accepted, a file directly in a role folder has no sub-folder (roles: Kick, Rumble, Drive, Crunch, Transient, Texture) | Must |
 | FR-161 | Import WAV, AIFF, FLAC; OGG and MP3 optional | Must / Could |
 | FR-162 | Drag an audio file onto a layer to load it | Must |
 | FR-163 | Add a user library by dragging a folder (≤ 4 levels); audio copied into the app's data folder | Should |
 | FR-164 | User libraries appear in pickers and can be included in randomization | Should |
 | FR-165 | Sample index with metadata (role, folder, root note, length, peak) built at import, cached on disk | Must |
 | FR-166 | Browser filters by role and folder; search by file name | Could |
+| FR-167 | Sample tagging: each sample can carry tags from a predefined category list, usable in pickers, browser filters and rolls | Won't (v1) — version 2 |
 
 ### 7.5 FX rack
 
@@ -619,7 +620,7 @@ The MVP is a playable 6-layer stack with role-based randomization, four FX modul
 | M5 Presets + export | Kick presets (floppy save / save as), Export all (all FX chains) with save dialog | UC-6 and UC-7 pass → **MVP** |
 | M6 Extended | 12 layers, user libraries, remaining 4 FX modules | Version 1 feature-complete |
 | M7 Release | Windows installer, factory content integrated, release QA | Version 1 release candidate |
-| V2 Synthesis tail + Export layer | Synthesis engine for the main kick tail, used as a layer type next to samples; key-tracked, rendered by the stack renderer; Export layer (one WAV per layer); spectral sidechain option; Temper mono-below for per-layer export; render in place on the layer card (FR-117); velocity-driven layer morphing (idea) | A synthesized tail can replace or blend with a sample tail |
+| V2 Synthesis tail + Export layer | Synthesis engine for the main kick tail, used as a layer type next to samples; key-tracked, rendered by the stack renderer; Export layer (one WAV per layer); spectral sidechain option; Temper mono-below for per-layer export; render in place on the layer card (FR-117); velocity-driven layer morphing (idea); sample tagging with a predefined category list (FR-167) | A synthesized tail can replace or blend with a sample tail |
 
 ## 14. Open questions & decision log
 
@@ -687,6 +688,7 @@ These need answers before or during the first coding session.
 | 2026-10-19 | The reference product is no longer named in the spec (sections 1, 11, decision log, sources); the repository history was rewritten once so no earlier version names it either. Document version 0.9 | Product owner decision; one-time, approved exception to the never-rewrite-history rule |
 | 2026-10-19 | LT-1 passed; the default Signalsmith Stretch preset stays the stretch setting (cheaper preset not used). LT-2 and AC-5 passed, including exact-pitch shifting (time-stretch by the pitch ratio plus a Repitch back to length) and the first-hit Repitch fallback. M1 manual checks (dev editor, plays in key in a DAW) passed | Product owner listening tests and checks at the end of M1 (docs/checks/M1.md in the code repo) |
 | 2026-10-19 | Spec review before the M1 second pass: the Tape knob value is a playback speed (2× = half the length, one octave up); Pitch mode and the Key Track cache shift pitch by a Signalsmith time-stretch plus a Lagrange repitch (exact pitch); each layer mode keeps its own value (open question closed); UI-017 settings keep their own requirement's priority; the empty-card button is Reforge; the 100 % window size is 1180 × 760 px. Document version 0.10 | Product owner decisions on contradictions C1–C6 found in the v0.9 review (docs/plan.md in the code repo) |
+| 2026-10-22 | M2 decisions: the bin resets the whole layer to its defaults (FR-112); a roll resets the rolled layer's start and end trim (FR-141, FR-142); a layer with an empty role pool stays as it is and shows “No sample found for this layer”; the library accepts Role → sub-folder → files and Role → files (FR-160); sample tagging with a predefined category list moves to version 2 (FR-167); restoring a host session clears the undo history, a loaded kick file is one undo step, layer selection is not undoable. Document version 0.11 | Product owner decisions from the M2 check (UC-1, UC-2, UC-3 passed on the dev editor) |
 
 ### Sources
 
