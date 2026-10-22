@@ -330,7 +330,7 @@ which may be confused with the layer's Tape mode in UI text and docs.
 | 2.4 ✓ | Layer operations: lock, mute (Shift unmutes all), exclusive solo (Shift adds), bin (disabled when locked), select, rename | FR-110–114 | UT incl. the Gherkin solo example |
 | 2.5 ✓ | Undo manager: commands for all model and settings edits, ≥ 50 steps, one gesture = one step | FR-145, FR-239 | UT: 60 edits undone/redone gives identical state |
 | 2.6 ✓ | Roll latency: chosen samples loaded on a background thread; measure | NFR-005 | BM: Forge to audible < 100 ms |
-| 2.7 | Dev editor extension: Forge, Reforge per layer, lock, undo/redo | — (temporary) | PO |
+| 2.7 ✓ | Dev editor extension: Forge, Reforge per layer, lock, undo/redo | — (temporary) | PO |
 
 **Exit M2:** all UT/RT pass and are shown; NFR-005 and NFR-008 benchmarks pass; the PO runs UC-1 and UC-2 on the
 dev editor with the factory library per `docs/checks/M2.md`. Tag `m2-done`.
@@ -393,7 +393,9 @@ dev editor with the factory library per `docs/checks/M2.md`. Tag `m2-done`.
   (the optional real-library NFR-005 BM, run by hand with `KLAY_BM_LIBRARY=C:\dev\KLAY-samples`: max 29 ms);
   `tools/validate.ps1`: pluginval strictness 8 PASSED, VST3 validator 47 passed / 0 failed. Synthetic NFR-005 max
   46–77 ms across runs (77 ms when run straight after the real-library BM in the same process); NFR-008 startup with
-  cache 12 ms, NFR-007 1.5 MB. Left for the M2 exit: the PO check (`docs/checks/M2.md`, ticks 2.7) and the `m2-done` tag.
+  cache 12 ms, NFR-007 1.5 MB. PO check (2026-10-22): UC-1, UC-2 and UC-3 passed on the dev editor (host not recorded); 2.7 ticked. Left for the
+  M2 exit: the `m2-done` tag (PO, after the milestone review). The five decisions in `docs/checks/M2.md` have no PO
+  answer yet; the implementation follows them until then.
 
 ## M3 Visualiser UI
 
