@@ -128,3 +128,70 @@ TEST_CASE("Processor: Forge, Reforge, bin and settings edits are undoable; a sta
     CHECK_FALSE(processor.getUndoHistory().canUndo());
     CHECK_FALSE(processor.getUndoHistory().canRedo());
 }
+
+// PO check 2026-10-22: an accidental Bin click is undone completely: the whole layer (sample, fader, knob values,
+// trims, offset, routing, switches, name, role and the volume envelope that replaces fades, FR-103) and the render.
+TEST_CASE("Processor: Undo after Bin restores the layer exactly, envelope included", "[plugin][undo][FR-112][FR-145]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    test::SyntheticLibrary lib(2);
+    KlayProcessor processor(ProcessorOptions{ lib.root(), lib.dataDir() });
+    REQUIRE(processor.getLibrary().waitUntilReady(30s));
+    processor.forge();
+
+    processor.edit("Set up layer 2", [](model::Kick& k) {
+        auto& l = k.layers[1];
+        l.name = "Sub tail";
+        l.role = model::Role::any;
+        l.faderDb = -4.5f;
+        l.offsetMs = 3.25;
+        l.startTrimMs = 2.0;
+        l.endTrimMs = 40.0;
+        l.mode = model::LayerMode::pitch;
+        l.length = 1.7;
+        l.pitchSemitones = -3;
+        l.pitchCents = 25;
+        l.tapeSpeed = 0.8;
+        l.routing = model::Routing::aux1;
+        l.mute = false;
+        l.solo = true;
+        l.pitchFollow = true;
+        l.envelope.points = { { 0.0, 0.0f, 0.4f }, { 5.0, 1.0f, -0.6f }, { 120.0, 0.35f, 0.2f }, { 300.0, 0.0f, 0.0f } };
+    });
+    const auto before = processor.getKick();
+    REQUIRE(processor.getEngine().waitForGeneration(processor.getRequestedGeneration(), 10s));
+    const auto renderBefore = processor.getEngine().latest();
+
+    // Bin through the dev editor's button, as a user click.
+    std::unique_ptr<juce::AudioProcessorEditor> editor(processor.createEditorAndMakeActive());
+    REQUIRE(editor != nullptr);
+    auto* bin = dynamic_cast<juce::Button*>(editor->findChildWithID("bin-1"));
+    REQUIRE(bin != nullptr);
+    REQUIRE(bin->isEnabled());
+    bin->onClick();
+    CHECK(processor.getKick().layers[1] == model::makeDefaultLayer(1));
+    CHECK(processor.getUndoHistory().undoLabel() == "Bin");
+
+    auto* undo = dynamic_cast<juce::Button*>(editor->findChildWithID("undo"));
+    REQUIRE(undo != nullptr);
+    undo->onClick();
+    CHECK(processor.getKick().layers[1] == before.layers[1]); // every field, envelope points and tensions included
+    CHECK(processor.getKick().layers[1].envelope == before.layers[1].envelope);
+    CHECK(processor.getKick() == before); // nothing else changed either
+
+    // The sound is back too: the render after Undo is bit-identical to the one before Bin (NFR-009).
+    REQUIRE(processor.getEngine().waitForGeneration(processor.getRequestedGeneration(), 10s));
+    const auto renderAfter = processor.getEngine().latest();
+    REQUIRE(renderBefore != nullptr);
+    REQUIRE(renderAfter != nullptr);
+    CHECK(renderAfter->length == renderBefore->length);
+    for (size_t b = 0; b < render::kNumBuses; ++b)
+    {
+        CHECK(renderAfter->buses[b].follow == renderBefore->buses[b].follow);
+        CHECK(renderAfter->buses[b].fixed == renderBefore->buses[b].fixed);
+    }
+    CHECK(renderAfter->autogain == renderBefore->autogain);
+
+    processor.editorBeingDeleted(editor.get());
+    editor.reset();
+}
