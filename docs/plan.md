@@ -395,8 +395,11 @@ dev editor with the factory library per `docs/checks/M2.md`. Tag `m2-done`.
   `tools/validate.ps1`: pluginval strictness 8 PASSED, VST3 validator 47 passed / 0 failed. Synthetic NFR-005 max
   46–77 ms across runs (77 ms when run straight after the real-library BM in the same process); NFR-008 startup with
   cache 12 ms, NFR-007 1.5 MB. PO check (2026-10-22): UC-1, UC-2 and UC-3 passed on the dev editor (host not recorded); 2.7 ticked. Left for the
-  M2 exit: the `m2-done` tag (PO, after the milestone review). The five decisions in `docs/checks/M2.md` have no PO
-  answer yet; the implementation follows them until then.
+  M2 exit: the `m2-done` tag (PO, after the milestone review). The PO answered the five decisions the same day
+  (spec v0.11, deviations log).
+- Re-run on the final M2 code (2026-10-22, after the bin and trim changes): build OK, `ctest` 145 tests, 144 passed, 1 skipped (the optional real-library BM)
+  (serial), `tools/validate.ps1` pluginval strictness 8 PASSED, VST3 validator 47 passed / 0 failed. `m2-done` set on
+  the PO's instruction.
 
 ## M3 Visualiser UI
 
