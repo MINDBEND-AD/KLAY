@@ -11,6 +11,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
+#include <algorithm>
 #include <atomic>
 #include <filesystem>
 #include <map>
@@ -111,6 +112,10 @@ public:
     random::RollResult reforge(size_t layer, std::optional<std::uint64_t> seed = std::nullopt);
     std::uint64_t getLastRollSeed() const noexcept { return lastRollSeed; }
 
+    // FR-113: the selected layer, layer 1 by default. UI state: not part of the kick, its state or the undo history.
+    size_t getSelectedLayer() const noexcept { return std::min(selectedLayer, kick.layers.size() - 1); }
+    void selectLayer(size_t index) noexcept { selectedLayer = std::min(index, kick.layers.size() - 1); }
+
 private:
     void timerCallback() override;
     std::uint64_t requestRender();
@@ -123,6 +128,7 @@ private:
     random::RolePools pools;
     std::uint64_t poolsVersion = ~std::uint64_t{ 0 };
     std::uint64_t seedState = 0, lastRollSeed = 0;
+    size_t selectedLayer = 0;
     SampleCache sampleCache;
     std::unique_ptr<render::KickEngine> engine;
     render::TempoDebouncer tempo;

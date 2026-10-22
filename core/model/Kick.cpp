@@ -37,6 +37,8 @@ Kick makeDefaultKick()
 
 void clickMute(Kick& kick, size_t index, bool shift)
 {
+    if (index >= kick.layers.size())
+        return;
     const bool anyMuted = std::any_of(kick.layers.begin(), kick.layers.end(), [](const Layer& l) { return l.mute; });
     if (shift && anyMuted)
     {
@@ -49,6 +51,8 @@ void clickMute(Kick& kick, size_t index, bool shift)
 
 void clickSolo(Kick& kick, size_t index, bool shift)
 {
+    if (index >= kick.layers.size())
+        return;
     auto& layer = kick.layers[index];
     if (shift)
     {
@@ -72,6 +76,39 @@ namespace
         return std::clamp(value, lo, hi);
     }
 } // namespace
+
+void toggleLock(Kick& kick, size_t index)
+{
+    if (index < kick.layers.size())
+        kick.layers[index].lock = ! kick.layers[index].lock;
+}
+
+bool canBin(const Kick& kick, size_t index) noexcept
+{
+    return index < kick.layers.size() && ! kick.layers[index].lock;
+}
+
+bool binLayer(Kick& kick, size_t index)
+{
+    if (! canBin(kick, index) || kick.layers[index].samplePath.empty())
+        return false;
+    kick.layers[index].samplePath.clear();
+    return true;
+}
+
+void renameLayer(Kick& kick, size_t index, std::string_view name)
+{
+    if (index >= kick.layers.size())
+        return;
+    std::string clean(name);
+    for (auto& c : clean)
+        if (static_cast<unsigned char>(c) < 0x20 || c == 0x7f)
+            c = ' ';
+    const auto first = clean.find_first_not_of(' ');
+    const auto last = clean.find_last_not_of(' ');
+    clean = first == std::string::npos ? std::string() : clean.substr(first, last - first + 1);
+    kick.layers[index].name = clean.empty() ? makeDefaultLayer(static_cast<int>(index)).name : clean;
+}
 
 bool inRollTemplate(const Settings& settings, size_t index) noexcept
 {

@@ -211,3 +211,19 @@ TEST_CASE("RT harness catches JUCE allocations and locks", "[plugin][rt][NFR-001
     }
     CHECK(recorder.counts().locks >= 1);
 }
+
+TEST_CASE("Processor: layer 1 is selected by default; selection is clamped and not part of the state", "[plugin][FR-113]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInit;
+    klay::KlayProcessor processor(klay::ProcessorOptions{ std::filesystem::path(), std::filesystem::temp_directory_path() });
+    CHECK(processor.getSelectedLayer() == 0);
+    processor.selectLayer(3);
+    CHECK(processor.getSelectedLayer() == 3);
+    processor.selectLayer(40);
+    CHECK(processor.getSelectedLayer() == processor.getKick().layers.size() - 1);
+
+    juce::MemoryBlock state;
+    processor.selectLayer(2);
+    processor.getStateInformation(state);
+    CHECK_FALSE(state.toString().contains("select"));
+}

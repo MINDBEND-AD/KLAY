@@ -327,7 +327,7 @@ which may be confused with the layer's Tape mode in UI text and docs.
 | 2.1 ✓ | Sample index: scan Role → sub-folder → files; metadata (role, folder, root, length, peak) built in the background; disk cache with mtime invalidation | FR-160, FR-165, NFR-007, NFR-008 | UT on a fixture tree: built, reused, invalidated; BM: startup with cache < 1.5 s, RAM < 300 MB |
 | 2.2 ✓ | Role pools; layer roles default from name, "Any" role | FR-140 | UT |
 | 2.3 ✓ | Seeded RNG + roll engine: Forge over the roll template, Reforge per layer, locked layers untouched, only the sample replaced | FR-141, FR-142, FR-143, FR-146, FR-147 | UT: Gherkin "layer 2 locked, layer 3 Crunch"; same seed gives the same roll; fader/envelope/offset/pitch/stretch/routing unchanged |
-| 2.4 | Layer operations: lock, mute (Shift unmutes all), exclusive solo (Shift adds), bin (disabled when locked), select, rename | FR-110–114 | UT incl. the Gherkin solo example |
+| 2.4 ✓ | Layer operations: lock, mute (Shift unmutes all), exclusive solo (Shift adds), bin (disabled when locked), select, rename | FR-110–114 | UT incl. the Gherkin solo example |
 | 2.5 | Undo manager: commands for all model and settings edits, ≥ 50 steps, one gesture = one step | FR-145, FR-239 | UT: 60 edits undone/redone gives identical state |
 | 2.6 | Roll latency: chosen samples loaded on a background thread; measure | NFR-005 | BM: Forge to audible < 100 ms |
 | 2.7 | Dev editor extension: Forge, Reforge per layer, lock, undo/redo | — (temporary) | PO |
@@ -360,6 +360,12 @@ dev editor with the factory library per `docs/checks/M2.md`. Tag `m2-done`.
   (FR-146): `settings.rollTemplate`, 0-based layer indices, default `[0, 1, 2]`, saved with the kick (an additive
   field, schema stays 2; older files get the default). The processor draws a fresh seed per roll from a
   `random_device`-seeded state and keeps the last one (`getLastRollSeed`); `forge(seed)` reproduces a roll.
+- 2.4: `model::toggleLock`, `canBin` / `binLayer`, `renameLayer` join the M1 `clickMute` / `clickSolo` (now bounds-checked).
+  **Interpretation, PO to confirm:** the bin (FR-112 "clears the layer to empty") removes only the sample; name, role,
+  fader, envelope, offset, trims, mode values, routing and switches stay, in line with rolls that replace only the
+  sample. Rename drops leading/trailing whitespace and control characters; an empty name restores the default name;
+  the role does not follow a rename. Selection (FR-113) is processor state (`selectLayer`, layer 1 by default), not
+  part of the kick, the saved state or the undo history.
 
 ## M3 Visualiser UI
 

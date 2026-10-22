@@ -20,6 +20,7 @@ add_executable(klay_core_tests
     core/CacheTests.cpp
     core/KeyDetectionTests.cpp
     core/KickModelTests.cpp
+    core/LayerOpsTests.cpp
     core/LibraryTests.cpp
     core/PlayerTests.cpp
     core/RandomTests.cpp

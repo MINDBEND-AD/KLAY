@@ -3,6 +3,7 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace klay::model
@@ -145,6 +146,18 @@ void clickMute(Kick& kick, size_t index, bool shift);
 // FR-111: Solo is exclusive, a new Solo replaces the previous ones; Shift+click adds (or removes) this layer's Solo.
 // A plain click on the only soloed layer clears it.
 void clickSolo(Kick& kick, size_t index, bool shift);
+
+// FR-101, FR-143: Lock protects a layer from rolls and from the bin (FR-112). Out-of-range indices are ignored.
+void toggleLock(Kick& kick, size_t index);
+
+// FR-112: the bin empties a layer: its sample is removed (the card shows the empty state), every other setting
+// stays. Disabled while the layer is locked. Returns whether the layer changed.
+bool canBin(const Kick& kick, size_t index) noexcept;
+bool binLayer(Kick& kick, size_t index);
+
+// FR-114: renames a layer. Leading and trailing whitespace is dropped and control characters become spaces; an empty
+// name restores the layer's default name.
+void renameLayer(Kick& kick, size_t index, std::string_view name);
 
 // FR-146: whether Forge re-rolls layer `index`.
 bool inRollTemplate(const Settings& settings, size_t index) noexcept;
